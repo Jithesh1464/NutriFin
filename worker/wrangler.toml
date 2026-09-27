@@ -1,0 +1,11 @@
+name = "gains-ledger-worker"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gains-ledger-db"
+database_id = "571eb048-9b75-4bf1-be00-5f9f87dd3ff9"
+
+[vars]
+JWT_SECRET = "change-me-for-production"
