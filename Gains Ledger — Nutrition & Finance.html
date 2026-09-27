@@ -1,0 +1,2140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1">
+<meta name="theme-color" content="#c3ff4d">
+<meta name="description" content="Track your nutrition, fitness, and personal finances with intelligent meal planning and investment tracking">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gains Ledger">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23c3ff4d' width='192' height='192'/><text x='96' y='140' font-size='100' font-weight='bold' text-anchor='middle' fill='%23000'>GL</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23c3ff4d' width='180' height='180' rx='40'/><text x='90' y='135' font-size='90' font-weight='bold' text-anchor='middle' fill='%23000'>GL</text></svg>">
+<title>Gains Ledger — Nutrition & Finance</title>
+<style>
+:root{
+  --bg:#0a0b0c; --bg2:#0f1110; --panel:rgba(255,255,255,0.045); --panel-brd:rgba(255,255,255,0.10);
+  --panel-hi:rgba(255,255,255,0.08); --txt:#f3f5ef; --txt-dim:#8d948f;
+  --accent:#c3ff4d; --accent-ink:#12140c; --cyan:#5fc9ff; --red:#ff7a7a; --shadow:rgba(0,0,0,0.6);
+  --input-bg:rgba(255,255,255,0.055); --ring:#c3ff4d;
+}
+:root[data-theme="light"]{
+  --bg:#f2f3ee; --bg2:#e9ebe3; --panel:rgba(255,255,255,0.65); --panel-brd:rgba(20,25,15,0.12);
+  --panel-hi:rgba(255,255,255,0.9); --txt:#14160f; --txt-dim:#5c635a;
+  --accent:#5c8a00; --accent-ink:#ffffff; --cyan:#0d7ab8; --red:#c8433a; --shadow:rgba(30,35,20,0.16);
+  --input-bg:rgba(20,25,15,0.05); --ring:#5c8a00;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:
+    radial-gradient(900px 500px at 90% -10%, rgba(195,255,77,0.08), transparent 60%),
+    linear-gradient(180deg, var(--bg), var(--bg2));
+  color:var(--txt); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter",Helvetica,Arial,sans-serif;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  -webkit-font-smoothing:antialiased; transition:background .3s,color .3s;
+}
+a{color:inherit}
+.wrap{max-width:1160px; margin:0 auto; padding:0 20px 70px}
+/* ---- Top nav ---- */
+.nav{display:flex; align-items:center; justify-content:space-between; padding:22px 20px}
+.brand{display:flex; align-items:center; gap:10px}
+.badge{width:30px;height:30px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:var(--accent-ink);font-weight:800;font-size:15px;transform:skew(-6deg)}
+.brand b{font-size:14px; letter-spacing:0.06em; font-weight:750}
+.navtabs{display:flex; gap:6px; background:var(--panel); border:1px solid var(--panel-brd); border-radius:999px; padding:4px; backdrop-filter:blur(16px)}
+.navtabs button{border:none; background:none; color:var(--txt-dim); font-size:12.5px; font-weight:650; letter-spacing:.03em; padding:8px 16px; border-radius:999px; cursor:pointer; transition:.2s}
+.navtabs button.active{background:var(--accent); color:var(--accent-ink)}
+.navright{display:flex; align-items:center; gap:10px}
+.themebtn{width:34px;height:34px;border-radius:50%;background:var(--panel);border:1px solid var(--panel-brd);cursor:pointer;font-size:14px;color:var(--txt)}
+.user-profile{position:relative}
+.profile-btn{width:34px;height:34px;border-radius:50%;background:var(--panel);border:1px solid var(--panel-brd);cursor:pointer;font-size:16px;color:var(--txt);transition:.2s}
+.profile-btn:hover{background:var(--panel-hi)}
+.profile-menu{position:absolute;top:45px;right:0;background:var(--panel);border:1px solid var(--panel-brd);border-radius:12px;backdrop-filter:blur(22px);box-shadow:0 10px 30px var(--shadow);min-width:160px;opacity:0;visibility:hidden;transition:.2s;z-index:100}
+.profile-menu.show{opacity:1;visibility:visible}
+.profile-header{padding:12px 16px;border-bottom:1px solid var(--panel-brd);font-size:13px;color:var(--txt-dim);font-weight:600}
+.profile-logout{width:100%;padding:12px 16px;background:none;border:none;color:var(--txt);text-align:left;cursor:pointer;font-size:13px;font-weight:500;transition:.2s}
+.profile-logout:hover{background:var(--panel-hi);color:var(--accent)}
+/* ---- Hero ---- */
+.hero{display:grid; grid-template-columns:1.5fr 1fr; gap:16px; margin-bottom:18px}
+@media (max-width:820px){.hero{grid-template-columns:1fr}}
+.herocard,.ringcard{background:var(--panel); border:1px solid var(--panel-brd); border-radius:26px; backdrop-filter:blur(22px); box-shadow:0 20px 50px var(--shadow); padding:34px}
+.eyebrow{font-size:11.5px; letter-spacing:.09em; font-weight:750; color:var(--accent); text-transform:uppercase; margin-bottom:16px}
+.eyebrow span{color:var(--txt-dim); font-weight:600}
+.headline{font-size:44px; line-height:1.03; font-weight:800; letter-spacing:-0.02em; margin:0 0 14px}
+.headline em{font-style:normal; color:var(--accent)}
+.herotext{color:var(--txt-dim); font-size:14px; line-height:1.6; max-width:480px; margin-bottom:22px}
+.statrow{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
+@media (max-width:620px){.statrow{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--input-bg); border:1px solid var(--panel-brd); border-radius:16px; padding:14px}
+.stat .k{font-size:10px; letter-spacing:.07em; color:var(--txt-dim); text-transform:uppercase; margin-bottom:6px}
+.stat .v{font-size:19px; font-weight:750}
+.stat .s{font-size:11px; color:var(--txt-dim); margin-top:2px}
+.ringcard{display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; overflow:hidden}
+.ringcard::before{content:"";position:absolute;inset:0;background:repeating-radial-gradient(circle at 50% 45%, transparent 0 34px, rgba(195,255,77,0.05) 35px);}
+.ring{width:190px;height:190px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;
+  background:conic-gradient(var(--accent) calc(var(--pct)*1%), rgba(255,255,255,0.08) 0);}
+.ring::before{content:"";position:absolute;inset:14px;border-radius:50%;background:var(--bg2)}
+.ring .center{position:relative;text-align:center}
+.ring .num{font-size:40px;font-weight:800}
+.ring .lab{font-size:10px;color:var(--txt-dim);letter-spacing:.05em;text-transform:uppercase;max-width:110px}
+/* ---- Calendar ---- */
+.monthbar{display:flex; align-items:center; justify-content:center; gap:16px; margin:8px 0 16px}
+.monthbar button{width:34px; height:34px; border-radius:50%; background:var(--panel); border:1px solid var(--panel-brd); color:var(--txt); font-size:14px; cursor:pointer}
+.monthbar .mtitle{font-size:16px; font-weight:700; min-width:180px; text-align:center}
+.todaybtn{font-size:11.5px; color:var(--accent); background:none; border:1px solid var(--panel-brd); border-radius:999px; padding:6px 14px; cursor:pointer}
+.calwrap{border-radius:26px; border:1px solid var(--panel-brd); background:var(--panel); backdrop-filter:blur(22px); padding:14px}
+.dow{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:6px}
+.dow div{text-align:center; font-size:10.5px; color:var(--txt-dim); font-weight:700; text-transform:uppercase; padding:6px 0}
+.dgrid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px}
+.day{aspect-ratio:1/1; border-radius:14px; background:var(--input-bg); border:1px solid var(--panel-brd); display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; transition:.16s; padding:4px}
+.day:hover{background:var(--panel-hi); transform:translateY(-2px)}
+.day.muted{opacity:.28}
+.day.today{box-shadow:0 0 0 2px var(--ring) inset}
+.day .num{font-size:13.5px; font-weight:700}
+.day .tag{font-size:8px; color:var(--txt-dim); margin-top:2px; text-align:center}
+/* ---- Modal (shared) ---- */
+.overlay{position:fixed; inset:0; background:rgba(4,5,8,0.55); backdrop-filter:blur(6px); display:none; align-items:flex-start; justify-content:center; z-index:50; padding:24px 16px; overflow-y:auto}
+.overlay.show{display:flex}
+.modal{width:100%; max-width:600px; margin:20px auto 40px; background:var(--panel); border:1px solid var(--panel-brd); border-radius:26px; backdrop-filter:blur(28px); padding:26px; box-shadow:0 30px 80px var(--shadow)}
+.modal h2{margin:0 0 2px; font-size:20px; font-weight:750}
+.modal .sub{color:var(--txt-dim); font-size:13px; margin-bottom:16px}
+.closebtn{float:right; background:var(--input-bg); border:1px solid var(--panel-brd); color:var(--txt); width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:15px}
+.totals{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:18px}
+.tot{background:var(--input-bg); border:1px solid var(--panel-brd); border-radius:14px; padding:10px; text-align:center}
+.tot .v{font-size:16px; font-weight:750}
+.tot .l{font-size:10px; color:var(--txt-dim); margin-top:2px}
+.mealcard{background:var(--input-bg); border:1px solid var(--panel-brd); border-radius:18px; padding:14px; margin-bottom:12px}
+.mealcard .mh{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px}
+.mealcard .label{font-size:11.5px; color:var(--txt-dim); font-weight:700}
+.mealcard .time{font-size:11px; color:var(--accent)}
+select.swap{width:100%; background:var(--panel-hi); color:var(--txt); border:1px solid var(--panel-brd); border-radius:10px; padding:8px 10px; font-size:13px; margin-bottom:8px}
+select.swap option{background:var(--bg2); color:var(--txt); padding:6px}
+.txform select{width:100%; background:var(--input-bg); color:var(--txt); border:1px solid var(--panel-brd); border-radius:10px; padding:9px 10px; font-size:12.5px}
+.txform select option{background:var(--bg2); color:var(--txt); padding:6px}
+.ilist{font-size:12px; color:var(--txt-dim); margin-bottom:8px; line-height:1.5}
+.mrow{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px}
+.mchip{background:var(--panel-hi); border:1px solid var(--panel-brd); border-radius:8px; padding:4px 8px; font-size:11px}
+.mchip b{color:var(--accent)}
+.whybtn{font-size:11.5px; color:var(--accent); background:none; border:none; cursor:pointer; padding:0}
+.dive{max-height:0; overflow:hidden; transition:max-height .3s ease; font-size:12px; color:var(--txt-dim); line-height:1.55}
+.dive.open{max-height:400px; margin-top:8px}
+.exwrap{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px}
+.exbox{background:var(--input-bg); border:1px solid var(--panel-brd); border-radius:16px; padding:14px}
+.exbox .t{font-size:11.5px; color:var(--txt-dim); font-weight:700; margin-bottom:4px}
+.exbox .n{font-size:14px; font-weight:750}
+.exbox .d{font-size:11.5px; color:var(--txt-dim); margin-top:4px}
+.movenote{font-size:11.5px; color:var(--txt-dim); margin-top:10px; padding:10px 12px; background:var(--input-bg); border-radius:12px; border:1px solid var(--panel-brd)}
+/* ---- Finance ---- */
+.finhero{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px}
+@media (max-width:760px){.finhero{grid-template-columns:1fr}}
+.fincard{background:var(--panel); border:1px solid var(--panel-brd); border-radius:18px; padding:16px; backdrop-filter:blur(20px); min-height:120px; display:flex; flex-direction:column; justify-content:center; overflow:hidden}
+.fincard .k{font-size:10px; letter-spacing:.06em; color:var(--txt-dim); text-transform:uppercase; margin-bottom:6px; word-break:break-word}
+.fincard .v{font-size:22px; font-weight:800; word-break:break-word; overflow-wrap:break-word}
+.fincard .v.pos{color:var(--accent)} .fincard .v.neg{color:var(--red)}
+.fincard-chart{background:var(--panel); border:1px solid var(--panel-brd); border-radius:18px; padding:12px 16px; backdrop-filter:blur(20px); display:flex; flex-direction:column; min-height:120px; justify-content:space-between}
+.fincard-chart-header{font-size:10px; letter-spacing:.06em; color:var(--txt-dim); text-transform:uppercase; margin-bottom:4px; font-weight:700}
+.fincard-chart .barchart{height:60px; padding-top:4px; margin-bottom:4px}
+.fingrid{display:grid; grid-template-columns:1.1fr 1fr; gap:14px; margin-bottom:16px}
+@media (max-width:820px){.fingrid{grid-template-columns:1fr}}
+.panel-box{background:var(--panel); border:1px solid var(--panel-brd); border-radius:24px; padding:22px; backdrop-filter:blur(20px); margin-bottom:16px}
+.panel-box h3{margin:0 0 16px; font-size:14px; font-weight:750; display:flex; justify-content:space-between; align-items:center}
+.donutrow{display:flex; align-items:center; gap:22px; flex-wrap:wrap}
+.donut{width:150px;height:150px;border-radius:50%; flex:none}
+.donut-hole{position:relative}
+.donut-hole::after{content:attr(data-total); position:absolute; inset:26px; border-radius:50%; background:var(--bg2); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:750; color:var(--txt)}
+.dlegend{flex:1; min-width:160px; display:flex; flex-direction:column; gap:8px}
+.dlegend .row{display:flex; align-items:center; gap:8px; font-size:12.5px}
+.dlegend .sw{width:9px;height:9px;border-radius:3px; flex:none}
+.dlegend .amt{margin-left:auto; color:var(--txt-dim)}
+.barchart{display:flex; align-items:flex-end; gap:10px; height:auto; padding-top:10px; flex:1}
+.barcol{flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end}
+.barcol .bars{display:flex; gap:3px; align-items:flex-end; height:50px}
+.barcol .bar{width:11px; border-radius:4px 4px 0 0; cursor:pointer; transition:.2s; position:relative}
+.barcol .bar:hover{opacity:0.85; transform:scaleY(1.05); transform-origin:bottom}
+.barcol .lab{font-size:9.5px; color:var(--txt-dim)}
+.legend2{display:flex; gap:10px; font-size:10px; color:var(--txt-dim); margin-top:2px}
+.legend2 .sw{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:5px}
+.donutrow{display:flex; align-items:center; gap:28px; flex-wrap:wrap}
+.donut-chart-container{position:relative; width:180px; height:180px; flex:none; display:flex; align-items:center; justify-content:center}
+.donut-svg{width:100%; height:100%}
+.donut-segment{cursor:pointer; transition:all .2s ease; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))}
+.donut-segment:hover{transform:scale(1.05) translate(0,-1px); filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5))}
+.donut-center-text{position:absolute; width:100%; height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column; pointer-events:none}
+.donut-total{font-size:24px; font-weight:800; color:var(--txt)}
+.donut-label{font-size:10px; color:var(--txt-dim); margin-top:2px; letter-spacing:.03em; text-transform:uppercase; font-weight:600}
+.donut-legend{flex:1; min-width:180px; display:flex; flex-direction:column; gap:10px}
+.donut-legend-item{display:flex; align-items:center; gap:10px; font-size:12px; word-break:break-word}
+.donut-legend-color{width:11px; height:11px; border-radius:2px; flex:none; min-width:11px}
+.donut-legend-label{flex:1; min-width:100px; color:var(--txt); word-break:break-word; overflow-wrap:break-word}
+.donut-legend-amt{color:var(--txt-dim); font-weight:700; text-align:right; flex-shrink:0; min-width:55px; word-break:break-word; overflow-wrap:break-word}
+.filter-bar{background:var(--panel); border:1px solid var(--panel-brd); border-radius:18px; backdrop-filter:blur(16px); padding:12px 18px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:24px; min-width:0}
+.filter-bar-label{font-size:12px; color:var(--txt-dim); font-weight:700; text-transform:uppercase; letter-spacing:.05em; white-space:nowrap}
+.filter-bar select{background:var(--panel-hi); color:var(--txt); border:1px solid var(--panel-brd); border-radius:10px; padding:8px 12px; font-size:12.5px; cursor:pointer; transition:.2s; min-width:100px}
+.filter-bar select:hover{background:var(--input-bg)}
+.filter-bar select option{background:var(--bg2); color:var(--txt); padding:6px}
+.filter-bar-spacer{flex:1; min-width:20px}
+.filter-bar-date{font-size:12px; color:var(--accent); font-weight:700; letter-spacing:.05em; white-space:nowrap}
+.txform{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:14px}
+@media (max-width:760px){.txform{grid-template-columns:1fr 1fr}}
+.txform select, .txform input{background:var(--input-bg); border:1px solid var(--panel-brd); color:var(--txt); border-radius:10px; padding:9px 10px; font-size:12.5px}
+.txform button{background:var(--accent); color:var(--accent-ink); border:none; border-radius:10px; font-weight:750; font-size:12.5px; cursor:pointer}
+.txlist{display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto; scrollbar-width:none}
+.txlist::-webkit-scrollbar{display:none}
+.txrow{display:grid; grid-template-columns:65px 80px 1fr 80px 45px 25px; align-items:center; gap:8px; background:var(--input-bg); border:1px solid var(--panel-brd); border-radius:12px; padding:10px 12px; font-size:12.5px}
+.txrow > span:first-child{font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.txrow .cat{font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:11px}
+.txrow .note{color:var(--txt-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px}
+.txrow .amt{text-align:right; white-space:nowrap; font-size:11px}
+.txrow .amt.pos{color:var(--accent); font-weight:750}
+.txrow .amt.neg{color:var(--red); font-weight:750}
+.txrow .edit{background:none;border:none;color:var(--accent);cursor:pointer;font-size:12px; padding:0; text-align:center}
+.txrow .del{background:none;border:none;color:var(--txt-dim);cursor:pointer;font-size:14px; padding:0; text-align:center}
+.tab-section{display:none} .tab-section.active{display:block}
+.edit-modal{position:fixed; inset:0; background:rgba(4,5,8,0.55); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; z-index:100; padding:24px 16px}
+.edit-modal.show{display:flex}
+.edit-form{width:100%; max-width:500px; background:var(--panel); border:1px solid var(--panel-brd); border-radius:20px; padding:24px; box-shadow:0 20px 60px var(--shadow)}
+.edit-form h3{margin:0 0 16px; font-size:18px; font-weight:750}
+.edit-form-group{margin-bottom:12px}
+.edit-form-group label{display:block; font-size:12px; color:var(--txt-dim); margin-bottom:6px; font-weight:700; text-transform:uppercase; letter-spacing:.05em}
+.edit-form-group input, .edit-form-group select{width:100%; background:var(--input-bg); color:var(--txt); border:1px solid var(--panel-brd); border-radius:10px; padding:10px; font-size:13px; box-sizing:border-box}
+.edit-form-group input option, .edit-form-group select option{background:var(--bg2); color:var(--txt)}
+.edit-form-buttons{display:flex; gap:10px; margin-top:20px; justify-content:flex-end}
+.edit-form-buttons button{padding:10px 18px; border-radius:10px; border:none; font-weight:700; font-size:13px; cursor:pointer}
+.btn-save{background:var(--accent); color:var(--accent-ink)}
+.btn-cancel{background:var(--panel-hi); color:var(--txt)}
+.btn-add{background:var(--accent); color:var(--accent-ink); border:none; border-radius:10px; padding:8px 16px; font-weight:700; font-size:12px; cursor:pointer; margin-bottom:12px}
+.table-action-cell{text-align:center; min-width:80px}
+.table-action-cell button{background:none; border:none; color:var(--accent); cursor:pointer; font-size:13px; margin:0 4px; font-weight:700}
+/* ---- Auth/Login ---- */
+.auth-screen{position:fixed; inset:0; background:linear-gradient(180deg, var(--bg), var(--bg2)); display:flex; align-items:center; justify-content:center; z-index:1000; backdrop-filter:blur(10px)}
+.auth-container{width:100%; max-width:420px; padding:20px}
+.auth-card{background:var(--panel); border:1px solid var(--panel-brd); border-radius:24px; padding:40px; backdrop-filter:blur(22px); box-shadow:0 20px 60px var(--shadow)}
+.auth-card h1{font-size:32px; font-weight:800; margin:0 0 8px; text-align:center}
+.auth-card .sub{font-size:14px; color:var(--txt-dim); text-align:center; margin-bottom:32px}
+.auth-form-group{margin-bottom:18px}
+.auth-form-group label{display:block; font-size:11px; color:var(--txt-dim); text-transform:uppercase; letter-spacing:.06em; font-weight:700; margin-bottom:8px}
+.auth-form-group input{width:100%; background:var(--input-bg); color:var(--txt); border:1px solid var(--panel-brd); border-radius:10px; padding:12px 14px; font-size:13px; transition:.2s}
+.auth-form-group input:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 2px rgba(195,255,77,0.1)}
+.password-toggle{position:relative}
+.password-toggle-btn{position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--txt-dim); cursor:pointer; font-size:16px; padding:4px}
+.auth-button{width:100%; background:var(--accent); color:var(--accent-ink); border:none; border-radius:10px; padding:12px; font-size:14px; font-weight:750; cursor:pointer; transition:.2s; margin-top:8px}
+.auth-button:hover{opacity:0.9; transform:translateY(-1px)}
+.auth-button:disabled{opacity:0.5; cursor:not-allowed}
+.auth-toggle{text-align:center; font-size:12px; color:var(--txt-dim); margin-top:16px}
+.auth-toggle button{background:none; border:none; color:var(--accent); cursor:pointer; font-weight:700; padding:0}
+
+/* ---- Notifications ---- */
+.notification-container{position:fixed; top:80px; right:20px; z-index:999; max-width:380px; pointer-events:none}
+@media (max-width:480px){.notification-container{top:70px; right:10px; left:10px; max-width:none}}
+.notification-card{background:var(--panel); border:2px solid var(--accent); border-radius:18px; backdrop-filter:blur(22px); box-shadow:0 20px 60px var(--shadow); padding:16px; margin-bottom:12px; animation:slideIn 0.4s ease; pointer-events:all; display:flex; flex-direction:column; gap:10px}
+@keyframes slideIn{from{transform:translateX(420px); opacity:0} to{transform:translateX(0); opacity:1}}
+@keyframes slideOut{from{transform:translateX(0); opacity:1} to{transform:translateX(420px); opacity:0}}
+.notification-card.closing{animation:slideOut 0.3s ease forwards}
+@media (max-width:480px){
+  @keyframes slideIn{from{transform:translateY(-20px); opacity:0} to{transform:translateY(0); opacity:1}}
+  @keyframes slideOut{from{transform:translateY(0); opacity:1} to{transform:translateY(-20px); opacity:0}}
+}
+.notification-header{display:flex; justify-content:space-between; align-items:flex-start; gap:10px}
+.notification-title{font-size:14px; font-weight:750; color:var(--accent); text-transform:uppercase; letter-spacing:.05em}
+.notification-close{background:none; border:none; color:var(--txt-dim); cursor:pointer; font-size:16px; padding:0; width:24px; height:24px; display:flex; align-items:center; justify-content:center}
+.notification-close:hover{color:var(--txt)}
+.notification-meal{font-size:16px; font-weight:800; color:var(--txt)}
+.notification-time{font-size:12px; color:var(--accent); font-weight:700}
+.notification-items{background:var(--input-bg); border:1px solid var(--panel-brd); border-radius:12px; padding:10px; font-size:11px}
+.notification-item{color:var(--txt-dim); margin-bottom:6px; display:flex; align-items:center; gap:6px}
+.notification-item:last-child{margin-bottom:0}
+.notification-item::before{content:'•'; color:var(--accent); font-weight:800}
+.notification-footer{display:flex; gap:8px; justify-content:flex-end}
+.btn-remind-later{background:var(--panel-hi); border:1px solid var(--panel-brd); color:var(--txt-dim); border-radius:8px; padding:8px 14px; font-size:11px; cursor:pointer; transition:.2s; font-weight:600}
+.btn-remind-later:hover{background:var(--input-bg); color:var(--txt)}
+.btn-speak{background:var(--accent); color:var(--accent-ink); border:none; border-radius:8px; padding:8px 14px; font-size:11px; cursor:pointer; transition:.2s; font-weight:700}
+.btn-speak:hover{opacity:0.9; transform:translateY(-1px)}
+
+.notification-settings{position:fixed; inset:0; background:rgba(4,5,8,0.55); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; z-index:50; padding:24px 16px; overflow-y:auto}
+.notification-settings.show{display:flex}
+.notification-settings-card{width:100%; max-width:500px; background:var(--panel); border:1px solid var(--panel-brd); border-radius:24px; backdrop-filter:blur(28px); padding:26px; box-shadow:0 30px 80px var(--shadow)}
+.notification-settings-card h2{margin:0 0 16px; font-size:18px; font-weight:750; color:var(--accent)}
+.notification-settings-card .close-settings{position:absolute; top:16px; right:16px; background:none; border:none; color:var(--txt-dim); cursor:pointer; font-size:18px}
+.settings-group{margin-bottom:18px; padding-bottom:18px; border-bottom:1px solid var(--panel-brd)}
+.settings-group:last-child{margin-bottom:0; padding-bottom:0; border-bottom:none}
+.settings-group label{display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; font-weight:600; color:var(--txt)}
+.settings-checkbox{width:18px; height:18px; border:2px solid var(--panel-brd); border-radius:4px; background:var(--input-bg); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:.2s}
+.settings-checkbox.checked{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.settings-group-title{font-size:12px; font-weight:700; color:var(--txt-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px}
+.meal-toggle{display:flex; align-items:center; gap:10px; margin-bottom:10px; padding:10px; background:var(--input-bg); border:1px solid var(--panel-brd); border-radius:10px}
+.meal-toggle input{width:16px; height:16px; cursor:pointer}
+.meal-toggle label{flex:1; cursor:pointer; margin:0; font-weight:500; font-size:12px}
+.settings-footer{display:flex; gap:10px; margin-top:18px; justify-content:flex-end}
+.btn-save-settings{background:var(--accent); color:var(--accent-ink); border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:12px; cursor:pointer}
+.btn-save-settings:hover{opacity:0.9}
+
+/* ======== RESPONSIVE MOBILE FIXES ======== */
+@media (max-width:480px){
+  .wrap{padding:0 12px 50px}
+  .nav{padding:16px 12px; flex-wrap:wrap; gap:10px}
+  .brand b{font-size:12px}
+  .badge{width:26px; height:26px; font-size:13px}
+  .navtabs button{font-size:11px; padding:6px 12px}
+  .headline{font-size:28px; line-height:1.1}
+  .statrow{grid-template-columns:repeat(2,1fr); gap:8px}
+  .stat{padding:12px}
+  .stat .v{font-size:16px}
+  .stat .k{font-size:9px}
+
+  .herocard,.ringcard{padding:20px}
+  .ring{width:140px; height:140px}
+  .ring .num{font-size:32px}
+  .ring .lab{font-size:9px; max-width:80px}
+
+  .calwrap{padding:10px}
+  .monthbar .mtitle{font-size:14px; min-width:120px}
+  .day .num{font-size:12px}
+  .day .tag{font-size:7px}
+
+  .finhero{gap:8px; margin-bottom:12px}
+  .fincard{padding:14px; min-height:100px; border-radius:14px}
+  .fincard .v{font-size:18px}
+  .fincard .k{font-size:9px}
+
+  .donutrow{gap:14px; justify-content:center}
+  .donut-chart-container{width:140px; height:140px}
+  .donut-legend{min-width:140px; flex-basis:100%}
+  .donut-legend-item{font-size:11px; gap:8px}
+  .donut-legend-label{min-width:100px}
+  .donut-legend-amt{min-width:50px; font-size:10px}
+  .donut-total{font-size:20px}
+  .donut-label{font-size:9px}
+
+  .fingrid{gap:10px}
+  .panel-box{padding:16px; border-radius:18px; margin-bottom:12px}
+  .panel-box h3{font-size:13px; gap:8px}
+
+  .filter-bar{padding:10px 12px; gap:8px; flex-direction:column; align-items:flex-start}
+  .filter-bar-label{font-size:11px}
+  .filter-bar select{font-size:12px; padding:7px 10px}
+  .filter-bar-spacer{display:none}
+  .filter-bar-date{font-size:11px}
+  #monthYearSelectors{flex-direction:column !important; width:100% !important}
+  #monthYearSelectors select{width:100%}
+
+  .txform{grid-template-columns:1fr; gap:6px}
+  .txform select, .txform input, .txform button{font-size:12px; padding:8px}
+
+  .txrow{grid-template-columns:60px 70px 1fr 50px 35px 25px; gap:6px; padding:8px 10px; font-size:11px}
+  .txrow > span:first-child{font-size:10px}
+  .txrow .cat{font-size:10px}
+  .txrow .note{font-size:10px}
+  .txrow .amt{font-size:10px}
+  .txrow .edit{font-size:11px}
+  .txrow .del{font-size:12px}
+
+  .exwrap{grid-template-columns:1fr; gap:8px}
+  .exbox{padding:12px}
+  .exbox .n{font-size:13px}
+  .exbox .t{font-size:10px}
+  .exbox .d{font-size:10px}
+
+  .modal{padding:20px; max-width:95vw; margin:15px auto 30px; border-radius:20px}
+  .modal h2{font-size:18px}
+  .modal .sub{font-size:12px}
+  .totals{gap:6px}
+  .tot{padding:8px}
+  .tot .v{font-size:14px}
+  .tot .l{font-size:9px}
+
+  .mealcard{padding:12px; margin-bottom:10px; border-radius:14px}
+  .mealcard .label{font-size:11px}
+  .mealcard .time{font-size:10px}
+  .ilist{font-size:11px}
+  .mchip{font-size:10px; padding:3px 6px}
+
+  .auth-card{padding:30px 20px}
+  .auth-card h1{font-size:26px}
+  .auth-card .sub{font-size:13px}
+  .auth-form-group input{padding:11px 12px; font-size:12px}
+  .auth-button{padding:11px; font-size:13px}
+
+  .edit-form{padding:20px; max-width:95vw}
+  .edit-form h3{font-size:16px}
+  .edit-form-group label{font-size:11px}
+  .edit-form-group input, .edit-form-group select{padding:9px; font-size:12px}
+  .edit-form-buttons button{padding:9px 16px; font-size:12px}
+
+  .barchart{gap:6px}
+  .barcol .bar{width:9px}
+  .barcol .lab{font-size:8px}
+  .legend2{font-size:9px; gap:8px}
+
+  .btnbar{display:flex; gap:6px; flex-wrap:wrap}
+}
+
+@media (max-width:600px){
+  .txrow .note{word-break:break-word}
+  .fincard .v{word-break:break-word; overflow-wrap:break-word}
+  .donut-legend-label{word-break:break-word}
+
+  .filter-bar{flex-direction:column}
+  .filter-bar select{width:100%}
+
+  #monthYearSelectors{flex-direction:column; gap:8px}
+  #monthYearSelectors select{width:100%}
+}
+
+@media (max-width:760px){
+  .headline{font-size:32px}
+  .herotext{font-size:13px}
+  .donutrow{flex-direction:column; align-items:flex-start}
+  .donut-chart-container{align-self:center}
+  .donut-legend{min-width:100%; flex-basis:100%}
+  .txform{grid-template-columns:1fr 1fr}
+  .panel-box h3{flex-wrap:wrap}
+  .btn-add{padding:7px 14px; font-size:11px}
+}
+
+@media (max-width:820px){
+  .monthbar{gap:12px; margin:6px 0 12px}
+  .monthbar .mtitle{min-width:140px}
+}
+</style>
+</head>
+<body>
+<!-- Auth Screen -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-container">
+    <div class="auth-card">
+      <h1>Gains Ledger</h1>
+      <div class="sub">Track nutrition & finance</div>
+
+      <div id="loginForm">
+        <div class="auth-form-group">
+          <label>User ID</label>
+          <input type="text" id="loginUserId" placeholder="Enter your user ID">
+        </div>
+        <div class="auth-form-group password-toggle">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter your password">
+          <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('loginPassword')">👁️</button>
+        </div>
+        <button class="auth-button" onclick="handleLogin()">Login</button>
+        <div class="auth-toggle">
+          Don't have an account? <button onclick="showRegisterForm()">Register</button>
+        </div>
+      </div>
+
+      <div id="registerForm" style="display:none">
+        <div class="auth-form-group">
+          <label>User ID</label>
+          <input type="text" id="regUserId" placeholder="Choose a user ID">
+        </div>
+        <div class="auth-form-group">
+          <label>Email</label>
+          <input type="email" id="regEmail" placeholder="Enter your email">
+        </div>
+        <div class="auth-form-group password-toggle">
+          <label>Password</label>
+          <input type="password" id="regPassword" placeholder="Create a password">
+          <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('regPassword')">👁️</button>
+        </div>
+        <button class="auth-button" onclick="handleRegister()">Register</button>
+        <div class="auth-toggle">
+          Already have an account? <button onclick="showLoginForm()">Login</button>
+        </div>
+      </div>
+
+      <div style="margin-top:24px; padding-top:24px; border-top:1px solid var(--panel-brd); text-align:center; font-size:11px; color:var(--txt-dim)">
+        <div id="authStatus" style="margin-bottom:8px"></div>
+        <div style="opacity:0.6">Demo: Use ID "demo1" password "12345678" or register new account</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="nav">
+  <div class="brand"><div class="badge">G</div><b>GAINS LEDGER</b></div>
+  <div class="navtabs">
+    <button class="active" data-tab="diet" onclick="switchTab('diet')">Nutrition</button>
+    <button data-tab="fin" onclick="switchTab('fin')">Finance</button>
+  </div>
+  <div class="navright">
+    <button class="themebtn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+    <button class="themebtn" id="notifyBtn" onclick="openNotificationSettings()" style="font-size:16px" title="Meal Notifications">🔔</button>
+    <div class="user-profile">
+      <button class="profile-btn" onclick="toggleProfileMenu()">👤</button>
+      <div class="profile-menu" id="profileMenu">
+        <div class="profile-header"><strong id="profileUserId">User</strong></div>
+        <button onclick="logout()" class="profile-logout">🚪 Logout</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Notification Container -->
+<div class="notification-container" id="notificationContainer"></div>
+
+<!-- Notification Settings Modal -->
+<div class="notification-settings" id="notificationSettings">
+  <div class="notification-settings-card" style="position:relative">
+    <button class="close-settings" onclick="closeNotificationSettings()">&times;</button>
+    <h2>Meal Notifications</h2>
+
+    <div class="settings-group">
+      <label>
+        <div class="settings-checkbox" id="mainToggle" onclick="toggleNotifications()"></div>
+        <span>Enable meal reminders</span>
+      </label>
+      <div style="font-size:11px; color:var(--txt-dim); margin-top:8px">Get notified 1 hour before each meal</div>
+    </div>
+
+    <div class="settings-group">
+      <div class="settings-group-title">Select meals to remind</div>
+      <div class="meal-toggle">
+        <input type="checkbox" id="notify-b" class="meal-checkbox" checked onchange="saveMealPreferences()">
+        <label for="notify-b">🍳 Breakfast (8:00 AM)</label>
+      </div>
+      <div class="meal-toggle">
+        <input type="checkbox" id="notify-l" class="meal-checkbox" checked onchange="saveMealPreferences()">
+        <label for="notify-l">🍜 Lunch (1:00 PM)</label>
+      </div>
+      <div class="meal-toggle">
+        <input type="checkbox" id="notify-pw" class="meal-checkbox" checked onchange="saveMealPreferences()">
+        <label for="notify-pw">⚡ Pre-Workout (5:00 PM)</label>
+      </div>
+      <div class="meal-toggle">
+        <input type="checkbox" id="notify-pow" class="meal-checkbox" checked onchange="saveMealPreferences()">
+        <label for="notify-pow">💪 Post-Workout (7:15 PM)</label>
+      </div>
+      <div class="meal-toggle">
+        <input type="checkbox" id="notify-din" class="meal-checkbox" checked onchange="saveMealPreferences()">
+        <label for="notify-din">🍽️ Dinner (7:45 PM)</label>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <label>
+        <div class="settings-checkbox" id="soundToggle" onclick="toggleNotificationSound()"></div>
+        <span>Sound on notification</span>
+      </label>
+    </div>
+
+    <div class="settings-footer">
+      <button class="btn-save-settings" onclick="closeNotificationSettings()">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============ DIET TAB ============ -->
+<div class="tab-section active" id="tab-diet">
+  <div class="hero">
+    <div class="herocard">
+      <div class="eyebrow">Gym Nutrition <span>·</span> Recovery <span>·</span> Whole Foods</div>
+      <h1 class="headline">Eat sharp.<br><em>Train harder.</em></h1>
+      <div class="herotext">A rotating 14-day plan sequenced for renal, pancreatic and hepatic load — mapped onto your real calendar, with swappable meals and matching workouts.</div>
+      <div class="statrow">
+        <div class="stat"><div class="k">Rotation</div><div class="v">14 days</div><div class="s">2 distinct weeks</div></div>
+        <div class="stat"><div class="k">Daily blocks</div><div class="v">5</div><div class="s">breakfast → dinner</div></div>
+        <div class="stat"><div class="k">Fasting window</div><div class="v">12 h</div><div class="s">20:00 → 08:00</div></div>
+        <div class="stat"><div class="k">Hydration</div><div class="v">3–4 L</div><div class="s">reference target</div></div>
+      </div>
+    </div>
+    <div class="ringcard">
+      <div class="ring" id="dietRing" style="--pct:0"><div class="center"><div class="num" id="ringNum">1</div><div class="lab">Day into the 14-day rotation</div></div></div>
+    </div>
+  </div>
+
+  <div class="monthbar">
+    <button onclick="changeMonth(-1)">&#8249;</button>
+    <div class="mtitle" id="mtitle"></div>
+    <button onclick="changeMonth(1)">&#8250;</button>
+  </div>
+  <div class="calwrap">
+    <div class="dow"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+    <div class="dgrid" id="dgrid"></div>
+  </div>
+  <div style="text-align:center;margin-top:14px"><button class="todaybtn" onclick="goToday()">Jump to Today</button></div>
+</div>
+
+<!-- ============ FINANCE TAB ============ -->
+<div class="tab-section" id="tab-fin">
+  <div class="eyebrow" style="margin-top:6px">Expenses <span>·</span> Gains <span>·</span> Net Worth</div>
+  <h1 class="headline" style="font-size:34px;margin-bottom:18px">Track the <em>other</em> kind of gains.</h1>
+
+  <div class="filter-bar">
+    <span class="filter-bar-label">Period:</span>
+    <select id="viewMode" onchange="updateDateFilters()">
+      <option value="year">This Year</option>
+      <option value="month">By Month</option>
+      <option value="all">All Time</option>
+    </select>
+    <div id="monthYearSelectors" style="display:none; gap:8px; align-items:center">
+      <select id="monthSelect" onchange="filterByDate()">
+        <option value="-1">All Months</option>
+        <option value="0">January</option>
+        <option value="1">February</option>
+        <option value="2">March</option>
+        <option value="3">April</option>
+        <option value="4">May</option>
+        <option value="5">June</option>
+        <option value="6">July</option>
+        <option value="7">August</option>
+        <option value="8">September</option>
+        <option value="9">October</option>
+        <option value="10">November</option>
+        <option value="11">December</option>
+      </select>
+      <select id="yearSelect" onchange="filterByDate()"></select>
+    </div>
+    <div class="filter-bar-spacer"></div>
+    <div class="filter-bar-date" id="dateRangeLabel">2026 Full Year</div>
+  </div>
+
+  <div class="finhero">
+    <div class="fincard"><div class="k">Total Expenses</div><div class="v neg" id="totalExpV">₹0</div></div>
+    <div class="fincard"><div class="k">Total Savings</div><div class="v pos" id="totalSavingsV">₹0</div></div>
+    <div class="fincard"><div class="k">Stock Value</div><div class="v" id="totalStockV">₹0</div></div>
+  </div>
+
+  <div class="finhero">
+    <div class="fincard"><div class="k">Net Worth</div><div class="v pos" id="netWorthV">₹0</div></div>
+    <div class="fincard"><div class="k">Total Gains</div><div class="v pos" id="totalGainsV">₹0</div></div>
+    <div class="fincard-chart">
+      <div class="fincard-chart-header">Income vs Expense</div>
+      <div class="barchart" id="barchart"></div>
+      <div class="legend2" style="margin-top:8px"><span><i class="sw" style="background:var(--accent)"></i>Income</span><span><i class="sw" style="background:var(--red)"></i>Expense</span></div>
+    </div>
+  </div>
+
+  <div class="fingrid">
+    <div class="panel-box">
+      <h3>Expenses by Category</h3>
+      <div class="donutrow">
+        <div class="donut-chart-container" id="expenseChartContainer">
+          <div class="donut-center-text"><div class="donut-total">₹0</div><div class="donut-label">Total</div></div>
+        </div>
+        <div class="donut-legend" id="expenseLegend"></div>
+      </div>
+    </div>
+    <div class="panel-box">
+      <h3>Investment Gains by Category</h3>
+      <div class="donutrow">
+        <div class="donut-chart-container" id="gainChartContainer">
+          <div class="donut-center-text"><div class="donut-total">₹0</div><div class="donut-label">Gains</div></div>
+        </div>
+        <div class="donut-legend" id="gainLegend"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-box">
+    <h3>Income & Salary <button class="btn-add" style="margin:0" onclick="addIncome()">+ Add</button></h3>
+    <div class="txlist" id="incomeList" style="max-height:300px"></div>
+  </div>
+
+  <div class="panel-box">
+    <h3>Detailed Expenses <button class="btn-add" style="margin:0" onclick="addExpense()">+ Add</button></h3>
+    <div class="txlist" id="expenseList" style="max-height:300px"></div>
+  </div>
+
+  <div class="panel-box">
+    <h3>Savings & Investments <button class="btn-add" style="margin:0" onclick="openSavingsModal()">+ Add</button></h3>
+    <div class="txlist" id="savingsList" style="max-height:300px"></div>
+  </div>
+
+  <div class="panel-box">
+    <h3>Stock Portfolio <button class="btn-add" style="margin:0" onclick="openStockModal()">+ Add</button></h3>
+    <div class="txlist" id="stocksList" style="max-height:300px"></div>
+  </div>
+</div>
+
+</div>
+
+<div class="overlay" id="overlay"><div class="modal" id="modalBody"></div></div>
+
+<div class="edit-modal" id="incomeEditModal">
+  <div class="edit-form">
+    <h3 id="incomeModalTitle">Add Income</h3>
+    <div class="edit-form-group">
+      <label>Date</label>
+      <input type="date" id="incEditDate">
+    </div>
+    <div class="edit-form-group">
+      <label>Source</label>
+      <select id="incEditSource"><option>Salary</option><option>Bonus</option><option>Freelance</option><option>Interest</option><option>Other Income</option></select>
+    </div>
+    <div class="edit-form-group">
+      <label>Description</label>
+      <input type="text" id="incEditDesc">
+    </div>
+    <div class="edit-form-group">
+      <label>Amount (₹)</label>
+      <input type="number" id="incEditAmt">
+    </div>
+    <div class="edit-form-buttons">
+      <button class="btn-cancel" onclick="closeIncomeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveIncomeEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="edit-modal" id="expenseEditModal">
+  <div class="edit-form">
+    <h3 id="expenseModalTitle">Add Expense</h3>
+    <div class="edit-form-group">
+      <label>Date</label>
+      <input type="date" id="expEditDate">
+    </div>
+    <div class="edit-form-group">
+      <label>Category</label>
+      <select id="expEditCat"><option>Food</option><option>Housing</option><option>Utilities</option><option>Transportation</option><option>Entertainment</option><option>Health</option><option>Shopping</option><option>Other</option></select>
+    </div>
+    <div class="edit-form-group">
+      <label>Description</label>
+      <input type="text" id="expEditDesc">
+    </div>
+    <div class="edit-form-group">
+      <label>Amount (₹)</label>
+      <input type="number" id="expEditAmt">
+    </div>
+    <div class="edit-form-buttons">
+      <button class="btn-cancel" onclick="closeExpenseModal()">Cancel</button>
+      <button class="btn-save" onclick="saveExpenseEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="edit-modal" id="savingsEditModal">
+  <div class="edit-form">
+    <h3 id="savingsModalTitle">Add Investment</h3>
+    <div class="edit-form-group">
+      <label>Investment Name</label>
+      <input type="text" id="savEditName">
+    </div>
+    <div class="edit-form-group">
+      <label>Category</label>
+      <select id="savEditCat"><option>Fixed Deposit</option><option>Recurring Deposit</option><option>Government Schemes</option><option>Bonds</option><option>Mutual Funds</option><option>Other</option></select>
+    </div>
+    <div class="edit-form-group">
+      <label>Investment Date</label>
+      <input type="date" id="savEditDate" onchange="calculateInvestmentValue()">
+    </div>
+    <div class="edit-form-group">
+      <label>Principal (₹)</label>
+      <input type="number" id="savEditPrincipal" onchange="calculateInvestmentValue()" oninput="calculateInvestmentValue()">
+    </div>
+    <div class="edit-form-group">
+      <label>Interest Rate (%)</label>
+      <input type="number" id="savEditRate" step="0.1" onchange="calculateInvestmentValue()" oninput="calculateInvestmentValue()">
+    </div>
+    <div class="edit-form-group">
+      <label>Interest Type</label>
+      <select id="savEditType" onchange="calculateInvestmentValue()"><option>Compound</option><option>Simple</option></select>
+    </div>
+    <div class="edit-form-group">
+      <label>Current Value (₹)</label>
+      <div style="background:var(--input-bg); border:1px solid var(--panel-brd); border-radius:10px; padding:10px; font-size:14px; font-weight:700; color:var(--accent); display:flex; align-items:center; justify-content:space-between">
+        <span id="savEditCurrentDisplay">₹0</span>
+        <span style="font-size:11px; color:var(--txt-dim); font-weight:500" id="savEditGainDisplay">+₹0 gain</span>
+      </div>
+    </div>
+    <div class="edit-form-buttons">
+      <button class="btn-cancel" onclick="closeSavingsModal()">Cancel</button>
+      <button class="btn-save" onclick="saveSavingsEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="edit-modal" id="stockEditModal">
+  <div class="edit-form">
+    <h3 id="stockModalTitle">Add Stock</h3>
+    <div class="edit-form-group">
+      <label>Ticker Symbol</label>
+      <input type="text" id="stockEditTicker" placeholder="e.g., TCS, INFY">
+    </div>
+    <div class="edit-form-group">
+      <label>Purchase Date</label>
+      <input type="date" id="stockEditDate">
+    </div>
+    <div class="edit-form-group">
+      <label>Shares Owned</label>
+      <input type="number" id="stockEditShares">
+    </div>
+    <div class="edit-form-group">
+      <label>Average Purchase Price (₹)</label>
+      <input type="number" id="stockEditAvgPrice" step="0.01">
+    </div>
+    <div class="edit-form-group">
+      <label>Current Price (₹)</label>
+      <input type="number" id="stockEditCurrent" step="0.01">
+    </div>
+    <div class="edit-form-buttons">
+      <button class="btn-cancel" onclick="closeStockModal()">Cancel</button>
+      <button class="btn-save" onclick="saveStockEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= THEME ================= */
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  document.getElementById("themeBtn").textContent = t==="light" ? "☀️" : "🌙";
+  try{ localStorage.setItem("theme", t); }catch(e){}
+}
+function toggleTheme(){ const cur=document.documentElement.getAttribute("data-theme")||"dark"; applyTheme(cur==="dark"?"light":"dark"); renderFinance(); }
+(function initTheme(){
+  let t="dark";
+  try{ t = localStorage.getItem("theme") || (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light":"dark"); }catch(e){}
+  applyTheme(t);
+})();
+function switchTab(name){
+  document.querySelectorAll(".navtabs button").forEach(b=>b.classList.toggle("active", b.dataset.tab===name));
+  document.getElementById("tab-diet").classList.toggle("active", name==="diet");
+  document.getElementById("tab-fin").classList.toggle("active", name==="fin");
+  if(name==="fin") renderFinance();
+}
+
+/* ================= NUTRITION DATA (unchanged engine) ================= */
+const ING = {
+ eggwhite:{n:"Egg White",p:11,fi:0,c:0.7,fa:0.2,vit:"Riboflavin, Selenium",note:"Egg whites deliver near-pure amino acids for keratin and muscle repair without a fat load that could spike sebum, easing the pancreas's protease workload."},
+ wholeegg:{n:"Whole Egg",p:13,fi:0,c:1.1,fa:11,vit:"Vitamin B12, Biotin, Lutein, Choline",note:"The yolk supplies B12 for myelin and red-cell maturation, plus lutein that deposits directly in the retina as a blue-light filter."},
+ shrimp:{n:"Vannamei Shrimp",p:24,fi:0,c:0.2,fa:1.7,vit:"Zinc, Selenium, Iodine, B12, Phosphorus, Omega-3",note:"Shrimp pairs lean protein with zinc and omega-3s that calm sebaceous inflammation, support thyroid hormone synthesis, and bind with calcium to harden bone."},
+ chicken:{n:"Chicken Breast",p:31,fi:0,c:0,fa:3.6,vit:"B12, Iron, Phosphorus",note:"Lean chicken carries oxygen-supporting iron and B12 without the saturated fat that burdens bile processing."},
+ soya:{n:"Soya Chunks (dry)",p:52,fi:13,c:33,fa:1,vit:"Iron, Folate, Plant Protein",note:"Soya chunks give a fat-free plant protein dose plus fermentable fibre that feeds gut bacteria producing gut-protective butyrate."},
+ ragi:{n:"Ragi (Finger Millet)",p:7,fi:11,c:72,fa:1.5,vit:"Calcium, Iron",tag:"carb",note:"Ragi's dense fibre matrix slows glucose release for a gentle pancreatic insulin curve, while its calcium fortifies bone and enamel."},
+ sweetpotato:{n:"Sweet Potato",p:1.6,fi:3,c:20,fa:0.1,vit:"Beta-Carotene",tag:"carb",note:"Slow-releasing starch fuels glycogen stores for training while beta-carotene converts to Vitamin A for retinal night-vision protein."},
+ banana:{n:"Banana",p:1.1,fi:2.6,c:23,fa:0.3,vit:"Potassium",tag:"carb",note:"Potassium in banana relaxes vessel walls and helps the kidneys flush excess sodium, easing cramping and renal load together."},
+ buttermilk:{n:"Majjiga (Buttermilk)",p:3,fi:0,c:4,fa:1,vit:"Probiotics, Electrolytes",note:"Thin, fermented buttermilk rehydrates without fat, reseeds gut Lactobacillus, and cools gastric acidity after spiced meals."},
+ gongura:{n:"Gongura (Sorrel Leaves)",p:2,fi:3,c:3,fa:0.5,vit:"Iron, Vitamin K, Folate",note:"Gongura's plant iron and Vitamin K route calcium into bone rather than blood vessels, while its folate supports new red-cell formation."},
+ amla:{n:"Amla (Indian Gooseberry)",p:0.9,fi:3.4,c:14,fa:0.1,vit:"Vitamin C (extreme)",note:"Amla's dense Vitamin C multiplies non-haem iron absorption from any leafy greens in the same meal, and cross-links new collagen for skin and joints."},
+ curryleaves:{n:"Curry Leaves",p:1,fi:1,c:2,fa:0.2,vit:"Iron",note:"A handful of curry leaves is a traditional follicle-anchoring iron source used sparingly for flavour, not bulk."},
+ papaya:{n:"Papaya",p:0.5,fi:1.8,c:11,fa:0.3,vit:"Papain enzyme, Vitamin C, Beta-Carotene",note:"Papain pre-digests residual protein fibres, taking mechanical load off the pancreas after a heavy egg or chicken meal."},
+ tomato:{n:"Cooked Tomato",p:1,fi:1.2,c:4,fa:0.2,vit:"Lycopene, Vitamin C",note:"Cooking concentrates lycopene into a bioavailable internal UV-buffer that accumulates in skin cells."},
+ spinach:{n:"Palak (Spinach)",p:3,fi:2.4,c:4,fa:0.4,vit:"Lutein, Zeaxanthin, Iron, Vitamin K",note:"Lutein and zeaxanthin deposit in the retina as an internal blue-light filter, while the iron here feeds the same red-cell pathway as other greens."},
+ cabbage:{n:"Cabbage",p:1.3,fi:2.5,c:6,fa:0.1,vit:"Vitamin U, Vitamin K",note:"S-Methylmethionine (Vitamin U) accelerates healing of the stomach's mucosal lining, guarding against training-related ulcer risk."},
+ moongdal:{n:"Moong Dal (cooked)",p:7,fi:8,c:19,fa:0.4,vit:"Folate, Plant Protein",note:"Moong dal's fibre-protein combination is gentle on the pancreas, needing only a modest insulin response."},
+ lentil:{n:"Lentils (cooked)",p:9,fi:8,c:20,fa:0.4,vit:"Iron, Folate",note:"Lentils supply a slow-digesting plant protein and iron combination that supports both muscle repair and red-cell formation."},
+ rice:{n:"Rice (cooked)",p:2.7,fi:0.4,c:28,fa:0.3,vit:"",tag:"carb",note:"White rice is eaten after the vegetables and dal in this bowl, which blunts what would otherwise be a fast glucose spike."},
+ beetroot:{n:"Beetroot",p:1.6,fi:2,c:10,fa:0.2,vit:"Dietary Nitrates",note:"Dietary nitrates convert to nitric oxide in the bloodstream, forcefully dilating vessels to lower blood pressure and protect the kidneys' filtering glomeruli."},
+ garlic:{n:"Garlic (tempering)",p:6.4,fi:2.1,c:33,fa:0.5,vit:"Allicin, Sulfur compounds",note:"Allicin relaxes blood vessels and thins platelet stickiness, while sulfur compounds arm the liver's detox enzymes."},
+ bellpepper:{n:"Bell Pepper",p:1,fi:2.1,c:6,fa:0.3,vit:"Vitamin C",note:"Bell pepper's Vitamin C supports collagen cross-linking in joints and skin and eases plant-iron absorption from the same plate."},
+ paneer:{n:"Paneer",p:18,fi:0,c:3.4,fa:20,vit:"Calcium, Protein",note:"Paneer delivers bioavailable dairy calcium and protein a couple of times a week, complementing Ragi's non-dairy calcium load."},
+ curd:{n:"Fresh Curd",p:3.5,fi:0,c:4.7,fa:4,vit:"Calcium, Probiotics",note:"A daily bowl of fresh curd combines gut-friendly probiotics with easily absorbed dairy calcium."},
+ sprouts:{n:"Moong Sprouts",p:7,fi:8,c:19,fa:0.4,vit:"Vitamin C, Folate, Plant Protein",note:"Sprouting raises the bioavailability of moong dal's protein and vitamin content, speeding the hair growth (anagen) phase."},
+ oats:{n:"Oats",p:13,fi:10,c:67,fa:7,vit:"Iron, Magnesium",tag:"carb",note:"Oats' soluble fibre forms a gel that blunts the glucose spike from the accompanying carbohydrate load."},
+ flaxseed:{n:"Flaxseed",p:18,fi:27,c:29,fa:42,vit:"Omega-3 (ALA)",note:"Ground flaxseed offers a vegetarian omega-3 top-up that supports scalp hydration and lowers circulating triglycerides."},
+ greentea:{n:"Green Tea",p:0,fi:0,c:0,fa:0,vit:"Catechins",note:"Catechins repair sun-induced DNA damage in skin cells and suppress the oral bacteria behind plaque and gingivitis."},
+ turm:{n:"Turmeric & Black Pepper",p:0.3,fi:0.2,c:1,fa:0.1,vit:"Curcumin, Piperine",note:"Piperine raises curcumin's bioavailability roughly twentyfold, letting it reach the liver to calm hepatic inflammation."},
+};
+const BF=[
+ {name:"Egg White & Tomato Omelette with Ragi Malt", items:[["eggwhite",90],["wholeegg",50],["tomato",80],["ragi",30]]},
+ {name:"Moong Sprouts, Gongura & Amla with Ragi Mudde", items:[["sprouts",120],["gongura",60],["amla",20],["ragi",40],["curryleaves",5]]},
+ {name:"Paneer-Spinach Oats Bowl", items:[["paneer",60],["spinach",80],["oats",35]]},
+ {name:"Boiled Eggs with Papaya & Green Tea", items:[["wholeegg",100],["papaya",100],["greentea",200]]},
+];
+const PW=[
+ {name:"Boiled Sweet Potato", items:[["sweetpotato",150]]},
+ {name:"Ragi Malt with Banana", items:[["ragi",40],["banana",60]]},
+ {name:"Oats Porridge with Flaxseed", items:[["oats",40],["flaxseed",10]]},
+];
+const POW=[
+ {name:"Egg Whites & Banana", items:[["eggwhite",120],["wholeegg",50],["banana",100]]},
+ {name:"Salted Buttermilk & Banana", items:[["buttermilk",250],["banana",100]]},
+ {name:"Moong Sprouts & Banana Recovery Bowl", items:[["sprouts",100],["banana",100]]},
+];
+const LU=[
+ {name:"Shrimp-Gongura Curry, Rice & Curd", items:[["shrimp",150],["gongura",80],["rice",120],["curd",100],["turm",3]]},
+ {name:"Chicken-Cabbage Curry, Rice & Moong Dal", items:[["chicken",150],["cabbage",80],["rice",100],["moongdal",80],["turm",3]]},
+ {name:"Soya Chunks-Spinach Curry, Rice & Buttermilk", items:[["soya",60],["spinach",80],["rice",100],["buttermilk",150],["turm",3]]},
+ {name:"Lentil-Beetroot Dal, Rice & Garlic Tempering", items:[["lentil",150],["beetroot",80],["rice",100],["garlic",5],["turm",3]]},
+];
+const DI=[
+ {name:"Chicken & Bell Pepper with Ragi", items:[["chicken",120],["bellpepper",80],["ragi",40],["turm",3]]},
+ {name:"Shrimp & Cabbage with Ragi", items:[["shrimp",120],["cabbage",80],["ragi",40],["turm",3]]},
+ {name:"Soya-Gongura Curry with Rice", items:[["soya",50],["gongura",70],["rice",80],["turm",3]]},
+ {name:"Paneer-Spinach with Moong Dal", items:[["paneer",80],["spinach",80],["moongdal",60],["turm",3]]},
+];
+const EX=[
+ {name:"Upper Body Strength", dur:"60 min", cal:420},
+ {name:"Lower Body Strength", dur:"55 min", cal:400},
+ {name:"Zone 2 Cardio (Jog / Cycle)", dur:"40 min", cal:380},
+ {name:"Full Body + Core", dur:"50 min", cal:390},
+ {name:"Rest Day — Mobility & Stretching", dur:"20 min", cal:80},
+];
+const WALK={name:"Post-Dinner Walk", dur:"25 min", cal:120};
+const SLOTS=[
+  {key:"b", label:"Breakfast", time:"8:00 AM", pool:BF},
+  {key:"l", label:"Lunch", time:"1:00 PM", pool:LU},
+  {key:"pw", label:"Pre-Workout", time:"5:00 PM", pool:PW},
+  {key:"pow", label:"Post-Workout", time:"7:15 PM", pool:POW},
+  {key:"din", label:"Dinner", time:"7:45 PM", pool:DI},
+];
+const SLOTNOTE={
+  b:"Eating no earlier than 8:00 AM completes the minimum 12-hour overnight fast, giving the pancreas's insulin-producing beta cells a full rest window since last night's dinner.",
+  l:"This meal contributes a moderate share of today's total protein, spaced away from breakfast and dinner so nitrogen byproducts reach the kidneys as a steady trickle rather than one heavy load.",
+  pw:"Eaten roughly 90 minutes before training, this gives slow-digesting carbohydrate time to convert to glycogen without sitting heavy through the lifts.",
+  pow:"Consumed within about 45 minutes of finishing training, this meal spikes insulin just enough to drive amino acids into newly torn muscle fibres before that recovery window closes.",
+  din:"Finishing before 8:00 PM preserves the same 12-hour pancreatic rest window ahead of tomorrow's breakfast, and keeps this protein share modest before sleep.",
+};
+const ANCHOR = new Date(2026,8,1);
+function cycleDay(date){ const diff=Math.round((new Date(date.getFullYear(),date.getMonth(),date.getDate())-ANCHOR)/86400000); return ((diff%14)+14)%14; }
+function defaultIdx(cd, slotKey, poolLen){
+  const wk = cd<7?0:1;
+  if(slotKey==="b"||slotKey==="pw") return (cd+wk)%poolLen;
+  if(slotKey==="pow") return (cd+wk+1)%poolLen;
+  if(slotKey==="l") return (cd+2*wk+1)%poolLen;
+  return (cd+3*wk+2)%poolLen;
+}
+function exIdxFor(cd){ return (cd%7===6) ? 4 : cd%4; }
+function loadOverrides(){ try{ return JSON.parse(localStorage.getItem(getStorageKey("dietOverrides"))||"{}"); }catch(e){ return {}; } }
+function saveOverride(dateKey, slotKey, idx){ try{ const o=loadOverrides(); o[dateKey+"_"+slotKey]=idx; localStorage.setItem(getStorageKey("dietOverrides"), JSON.stringify(o)); }catch(e){} }
+function getIdx(dateKey, slotKey, cd, poolLen){ const o=loadOverrides(); const k=dateKey+"_"+slotKey; if(o[k]!==undefined && o[k]<poolLen) return o[k]; return defaultIdx(cd, slotKey, poolLen); }
+function macros(items){
+  let p=0,fi=0,c=0,fa=0,starch=0; const vits=new Set();
+  items.forEach(([id,g])=>{ const ing=ING[id]; const f=g/100; p+=ing.p*f; fi+=ing.fi*f; c+=ing.c*f; fa+=ing.fa*f; if(ing.tag==="carb") starch+=ing.c*f; if(ing.vit) ing.vit.split(", ").forEach(v=>vits.add(v)); });
+  return {p,fi,fa,starch,net:c-fi,vits:[...vits].join(", "),kcal:p*4+c*4+fa*9};
+}
+function rationale(slotKey, items){
+  const ids=items.map(i=>i[0]); const has=id=>ids.includes(id);
+  let out=[SLOTNOTE[slotKey]];
+  if(has("amla") && (has("gongura")||has("spinach"))) out.push("Vitamin C from Amla multiplies the non-haem iron absorbed from the leafy greens alongside it — directly supporting hemoglobin and ferritin.");
+  if(has("banana")) out.push("Potassium from banana relaxes vessel walls and helps the kidneys clear excess sodium, protecting the glomerular filters.");
+  if((has("ragi")||has("sweetpotato")||has("spinach")||has("cabbage")) && (slotKey==="l"||slotKey==="din")) out.push("This fibre binds old bile in the intestine and carries it out, prompting the liver to draw fresh cholesterol from the blood — keeping the gallbladder flushed.");
+  if(has("turm")) out.push("Black pepper alongside the turmeric multiplies curcumin's absorption, letting it reach the liver to calm inflammation.");
+  return out.join(" ");
+}
+let viewYear=2026, viewMonth=8;
+const MNAMES=["January","February","March","April","May","June","July","August","September","October","November","December"];
+function pad(n){return n<10?"0"+n:""+n;}
+function dateKeyOf(y,m,d){ return y+"-"+pad(m+1)+"-"+pad(d); }
+function renderCalendar(){
+  document.getElementById("mtitle").textContent = MNAMES[viewMonth]+" "+viewYear;
+  const first=new Date(viewYear,viewMonth,1); const startDow=first.getDay();
+  const daysInMonth=new Date(viewYear,viewMonth+1,0).getDate(); const daysInPrev=new Date(viewYear,viewMonth,0).getDate();
+  const today=new Date(); const cells=[];
+  for(let i=0;i<startDow;i++) cells.push({d:daysInPrev-startDow+1+i, muted:true, y:viewYear, m:viewMonth-1});
+  for(let d=1; d<=daysInMonth; d++) cells.push({d, muted:false, y:viewYear, m:viewMonth});
+  while(cells.length%7!==0 || cells.length<35) cells.push({d:cells.length-startDow-daysInMonth+1, muted:true, y:viewYear, m:viewMonth+1});
+  let html="";
+  cells.forEach(c=>{
+    const realDate=new Date(c.y,c.m,c.d); const cd=cycleDay(realDate);
+    const isToday=realDate.toDateString()===today.toDateString();
+    const exN=EX[exIdxFor(cd)].name.split(" ")[0];
+    html+=`<div class="day ${c.muted?"muted":""} ${isToday?"today":""}" onclick="openDay(${realDate.getFullYear()},${realDate.getMonth()},${realDate.getDate()})"><div class="num">${c.d}</div><div class="tag">${exN}</div></div>`;
+  });
+  document.getElementById("dgrid").innerHTML=html;
+  const todayCd=cycleDay(today);
+  document.getElementById("ringNum").textContent=(todayCd+1);
+  document.getElementById("dietRing").style.setProperty("--pct", Math.round(((todayCd+1)/14)*100));
+}
+function changeMonth(delta){ viewMonth+=delta; if(viewMonth<0){viewMonth=11;viewYear--;} if(viewMonth>11){viewMonth=0;viewYear++;} renderCalendar(); }
+function goToday(){ const t=new Date(); viewYear=t.getFullYear(); viewMonth=t.getMonth(); renderCalendar(); }
+renderCalendar();
+function mealCardHtml(dateKey, cd, slot){
+  const idx=getIdx(dateKey, slot.key, cd, slot.pool.length); const meal=slot.pool[idx]; const m=macros(meal.items);
+  const opts=slot.pool.map((opt,i)=>`<option value="${i}" ${i===idx?"selected":""}>${opt.name}</option>`).join("");
+  const ingTxt=meal.items.map(([id,g])=>`${ING[id].n} ${g}${(id==="buttermilk"||id==="greentea")?"ml":"g"}`).join(", ");
+  return `<div class="mealcard"><div class="mh"><span class="label">${slot.label}</span><span class="time">${slot.time}</span></div>
+    <select class="swap" onchange="swapMeal('${dateKey}',${cd},'${slot.key}',this.value)">${opts}</select>
+    <div class="ilist">${ingTxt}</div>
+    <div class="mrow">
+      <div class="mchip"><b>${m.p.toFixed(1)}g</b> Protein</div><div class="mchip"><b>${m.starch.toFixed(1)}g</b> Starch</div>
+      <div class="mchip"><b>${m.fi.toFixed(1)}g</b> Fiber</div><div class="mchip"><b>${m.net.toFixed(1)}g</b> Net Carbs</div>
+      <div class="mchip"><b>${m.fa.toFixed(1)}g</b> Fats</div><div class="mchip"><b>${Math.round(m.kcal)}</b> kcal</div>
+    </div>
+    <button class="whybtn" onclick="toggleDive('${slot.key}')">Why this pairing?</button>
+    <div class="dive" id="dive_${slot.key}">${rationale(slot.key, meal.items)}<br><br><b>Minerals/Vitamins:</b> ${m.vits||"—"}</div></div>`;
+}
+function dayTotals(dateKey, cd){
+  let tp=0,tfi=0,tfa=0,tnet=0,tstarch=0,tkcal=0;
+  SLOTS.forEach(slot=>{ const idx=getIdx(dateKey,slot.key,cd,slot.pool.length); const m=macros(slot.pool[idx].items); tp+=m.p; tfi+=m.fi; tfa+=m.fa; tnet+=m.net; tstarch+=m.starch; tkcal+=m.kcal; });
+  return {tp,tfi,tfa,tnet,tstarch,tkcal};
+}
+function openDay(y,mo,d){
+  const date=new Date(y,mo,d); const dateKey=dateKeyOf(y,mo,d); const cd=cycleDay(date);
+  const ex=EX[exIdxFor(cd)]; const t=dayTotals(dateKey,cd);
+  const dstr=date.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+  const cardsHtml=SLOTS.map(slot=>mealCardHtml(dateKey,cd,slot)).join("");
+  const totalBurn=ex.cal+WALK.cal;
+  document.getElementById("modalBody").innerHTML=`
+    <button class="closebtn" onclick="closeModal()">&times;</button>
+    <h2>${dstr}</h2>
+    <div class="sub">Rotation Day ${cd+1} of 14 &middot; Full daily plan, editable</div>
+    <div class="totals">
+      <div class="tot"><div class="v">${Math.round(t.tkcal)}</div><div class="l">Kcal Eaten</div></div>
+      <div class="tot"><div class="v">${t.tp.toFixed(0)}g</div><div class="l">Total Protein</div></div>
+      <div class="tot"><div class="v">${totalBurn}</div><div class="l">Kcal Burned</div></div>
+    </div>
+    ${cardsHtml}
+    <div class="exwrap">
+      <div class="exbox"><div class="t">🏋️ Gym</div><div class="n">${ex.name}</div><div class="d">${ex.dur} &middot; ~${ex.cal} kcal</div></div>
+      <div class="exbox"><div class="t">🚶 Walk</div><div class="n">${WALK.name}</div><div class="d">${WALK.dur} &middot; ~${WALK.cal} kcal</div></div>
+    </div>
+    <div class="movenote">Stand and walk for 2 minutes every 45 minutes at your desk — this mechanical pump keeps blood from pooling in the legs and moves lymph fluid, independent of the gym session above.</div>`;
+  document.getElementById("overlay").classList.add("show"); document.getElementById("overlay").scrollTop=0;
+}
+function closeModal(){ document.getElementById("overlay").classList.remove("show"); }
+function toggleDive(key){ document.getElementById("dive_"+key).classList.toggle("open"); }
+function swapMeal(dateKey, cd, slotKey, val){ saveOverride(dateKey, slotKey, parseInt(val,10)); const p=dateKey.split("-"); openDay(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2])); }
+document.getElementById("overlay").addEventListener("click",e=>{ if(e.target.id==="overlay") closeModal(); });
+
+/* ================= FINANCE MODULE ================= */
+function getStorageKey(key){ return currentUser?`${currentUser.userId}_${key}`:key; }
+function loadExpenses(){ try{ return JSON.parse(localStorage.getItem(getStorageKey("finExpenses"))||"[]"); }catch(e){ return []; } }
+function saveExpenses(list){ try{ localStorage.setItem(getStorageKey("finExpenses"), JSON.stringify(list)); }catch(e){} }
+function loadIncome(){ try{ return JSON.parse(localStorage.getItem(getStorageKey("finIncome"))||"[]"); }catch(e){ return []; } }
+function saveIncome(list){ try{ localStorage.setItem(getStorageKey("finIncome"), JSON.stringify(list)); }catch(e){} }
+function loadSavings(){ try{ return JSON.parse(localStorage.getItem(getStorageKey("finSavings"))||"[]"); }catch(e){ return []; } }
+function saveSavings(list){ try{ localStorage.setItem(getStorageKey("finSavings"), JSON.stringify(list)); }catch(e){} }
+function loadStocks(){ try{ return JSON.parse(localStorage.getItem(getStorageKey("finStocks"))||"[]"); }catch(e){ return []; } }
+function saveStocks(list){ try{ localStorage.setItem(getStorageKey("finStocks"), JSON.stringify(list)); }catch(e){} }
+function fmt(n){ return "₹"+Math.round(n).toLocaleString("en-IN"); }
+const DONUT_COLORS=["#c3ff4d","#5fc9ff","#ff7a7a","#ffb864","#c88cff","#4ddbc0","#ffaa44","#88cc88","#ff99dd","#44ddff"];
+function createDonutChart(data, containerId, legendId){
+  const total=Object.values(data).reduce((a,b)=>a+b,0);
+  const entries=Object.entries(data).sort((a,b)=>b[1]-a[1]);
+
+  let svg=`<svg class="donut-svg" viewBox="0 0 140 140"><g transform="translate(70,70)">`;
+  let angle=0;
+
+  if(total===0){
+    svg+=`<circle cx="0" cy="0" r="50" fill="var(--input-bg)" stroke="var(--panel-brd)" stroke-width="2"/><circle cx="0" cy="0" r="30" fill="var(--bg2)"/>`;
+  } else {
+    entries.forEach((entry,idx)=>{
+      const [label,value]=entry;
+      const pct=value/total;
+      const deg=pct*360;
+      const rad1=angle*Math.PI/180;
+      const rad2=(angle+deg)*Math.PI/180;
+      const outerR=50, innerR=30;
+      const x1o=outerR*Math.cos(rad1), y1o=outerR*Math.sin(rad1);
+      const x2o=outerR*Math.cos(rad2), y2o=outerR*Math.sin(rad2);
+      const x1i=innerR*Math.cos(rad1), y1i=innerR*Math.sin(rad1);
+      const x2i=innerR*Math.cos(rad2), y2i=innerR*Math.sin(rad2);
+      const large=deg>180?1:0;
+      const path=`M ${x1o} ${y1o} A ${outerR} ${outerR} 0 ${large} 1 ${x2o} ${y2o} L ${x2i} ${y2i} A ${innerR} ${innerR} 0 ${large} 0 ${x1i} ${y1i} Z`;
+      const color=DONUT_COLORS[idx%DONUT_COLORS.length];
+      svg+=`<path class="donut-segment" d="${path}" fill="${color}" stroke="var(--bg2)" stroke-width="1.5"/>`;
+
+      angle+=deg;
+    });
+  }
+
+  svg+="</g></svg>";
+  const svgOnly=document.getElementById(containerId).querySelector('.donut-svg');
+  if(svgOnly) document.getElementById(containerId).removeChild(svgOnly);
+  const svg_el=document.createElement('div');
+  svg_el.innerHTML=svg;
+  document.getElementById(containerId).insertBefore(svg_el.firstChild,document.getElementById(containerId).querySelector('.donut-center-text'));
+
+  const totalText=total===0?"₹0":total>=100000?`₹${(total/100000).toFixed(1)}L`:total>=1000?`₹${(total/1000).toFixed(0)}K`:`₹${total}`;
+  document.getElementById(containerId).querySelector('.donut-total').textContent=totalText;
+
+  let legendHtml="";
+  if(total===0){
+    legendHtml="<div style='color:var(--txt-dim); font-size:12px; padding:12px'>No data for this period</div>";
+  } else {
+    entries.forEach((entry,idx)=>{
+      const [label,value]=entry;
+      const color=DONUT_COLORS[idx%DONUT_COLORS.length];
+      legendHtml+=`<div class="donut-legend-item"><div class="donut-legend-color" style="background:${color}"></div><div class="donut-legend-label">${label}</div><div class="donut-legend-amt">${fmt(value)}</div></div>`;
+    });
+  }
+  document.getElementById(legendId).innerHTML=legendHtml;
+}
+function seedDataIfEmpty(){
+  if(!currentUser || currentUser.userId !== 'demo') return;
+  let exp=loadExpenses();
+  if(exp.length===0){
+    exp=[
+      {id:1, date:"2026-01-15", cat:"Food", desc:"Groceries", amt:4500},
+      {id:2, date:"2026-01-10", cat:"Housing", desc:"Monthly Apartment Rent", amt:15000},
+      {id:3, date:"2026-02-05", cat:"Utilities", desc:"Electricity & Internet", amt:1200},
+      {id:4, date:"2026-02-20", cat:"Transportation", desc:"Fuel & Metro Pass", amt:2500},
+      {id:5, date:"2026-03-12", cat:"Food", desc:"Monthly Groceries & Supermarket", amt:5200},
+      {id:6, date:"2026-03-25", cat:"Entertainment", desc:"Weekend Outing & Streaming", amt:5000},
+      {id:7, date:"2026-04-08", cat:"Health", desc:"Health Insurance & Pharmacy", amt:2200},
+      {id:8, date:"2026-04-18", cat:"Shopping", desc:"Apparel & Home Supplies", amt:3800},
+      {id:9, date:"2026-05-10", cat:"Food", desc:"Groceries", amt:4800},
+      {id:10, date:"2026-05-20", cat:"Housing", desc:"Monthly Apartment Rent", amt:15000},
+      {id:11, date:"2026-06-05", cat:"Utilities", desc:"Electricity & Internet", amt:1100},
+      {id:12, date:"2026-06-22", cat:"Transportation", desc:"Fuel & Metro Pass", amt:2200},
+      {id:13, date:"2026-07-15", cat:"Food", desc:"Monthly Groceries & Supermarket", amt:5100},
+      {id:14, date:"2026-07-28", cat:"Entertainment", desc:"Weekend Outing & Streaming", amt:4500},
+      {id:15, date:"2026-08-10", cat:"Health", desc:"Health Insurance & Pharmacy", amt:2100},
+      {id:16, date:"2026-08-20", cat:"Shopping", desc:"Apparel & Home Supplies", amt:3200},
+      {id:17, date:"2026-09-05", cat:"Food", desc:"Groceries", amt:5085},
+      {id:18, date:"2026-09-12", cat:"Housing", desc:"Monthly Apartment Rent", amt:15000},
+      {id:19, date:"2026-09-23", cat:"Utilities", desc:"Electricity & Internet", amt:1000},
+      {id:20, date:"2026-09-25", cat:"Transportation", desc:"Fuel & Metro Pass", amt:2000},
+      {id:21, date:"2026-10-08", cat:"Food", desc:"Monthly Groceries", amt:5000},
+      {id:22, date:"2026-10-15", cat:"Housing", desc:"Monthly Apartment Rent", amt:15000},
+      {id:23, date:"2026-10-25", cat:"Entertainment", desc:"Movies & Events", amt:4800},
+      {id:24, date:"2026-11-10", cat:"Health", desc:"Medical & Pharmacy", amt:2300},
+      {id:25, date:"2026-11-22", cat:"Shopping", desc:"Clothes & Home", amt:4000},
+      {id:26, date:"2026-12-05", cat:"Food", desc:"Groceries", amt:5500},
+      {id:27, date:"2026-12-15", cat:"Housing", desc:"Monthly Apartment Rent", amt:15000},
+    ];
+    saveExpenses(exp);
+  }
+  let inc=loadIncome();
+  if(inc.length===0){
+    inc=[
+      {id:1, date:"2026-04-10", src:"Salary", amt:45000},
+      {id:2, date:"2026-05-10", src:"Salary", amt:45000},
+      {id:3, date:"2026-06-10", src:"Salary", amt:45000},
+      {id:4, date:"2026-07-10", src:"Salary", amt:45000},
+      {id:5, date:"2026-08-10", src:"Salary", amt:43000},
+      {id:6, date:"2026-09-10", src:"Salary", amt:45000},
+    ];
+    saveIncome(inc);
+  }
+  let sav=loadSavings();
+  if(sav.length===0){
+    sav=[
+      {id:1, name:"HDFC Fixed Deposit", cat:"Fixed Deposit", principal:50000, date:"2024-09-25", rate:7, type:"Compound", current:57255.76, gain:7255.76},
+      {id:2, name:"ICICI Recurring Deposit", cat:"Recurring Deposit", principal:25000, date:"2025-03-15", rate:6.5, type:"Simple", current:27487.15, gain:2487.15},
+      {id:3, name:"Public Provident Fund", cat:"Government Schemes", principal:40000, date:"2023-09-25", rate:7.1, type:"Compound", current:49148.60, gain:9148.60},
+      {id:4, name:"Sovereign Gold Bond", cat:"Bonds", principal:30000, date:"2024-03-01", rate:2.5, type:"Simple", current:31927.08, gain:1927.08},
+    ];
+    saveSavings(sav);
+  }
+  let stk=loadStocks();
+  if(stk.length===0){
+    stk=[
+      {id:1, ticker:"TCS", date:"2024-06-15", shares:10, avgPrice:3650, current:3850, value:38500},
+      {id:2, ticker:"INFY", date:"2024-08-20", shares:5, avgPrice:2100, current:2250, value:11250},
+    ];
+    saveStocks(stk);
+  }
+}
+/* Income Functions */
+function addIncome(){
+  window.currentIncomeId=null;
+  document.getElementById("incomeModalTitle").textContent="Add Income";
+  document.getElementById("incEditDate").value=new Date().toISOString().slice(0,10);
+  document.getElementById("incEditSource").value="Salary";
+  document.getElementById("incEditDesc").value="";
+  document.getElementById("incEditAmt").value="";
+  document.getElementById("incomeEditModal").classList.add("show");
+}
+function editIncome(id){
+  const inc=loadIncome().find(i=>i.id===id);
+  if(!inc) return;
+  window.currentIncomeId=id;
+  document.getElementById("incomeModalTitle").textContent="Edit Income";
+  document.getElementById("incEditDate").value=inc.date;
+  document.getElementById("incEditSource").value=inc.src;
+  document.getElementById("incEditDesc").value=inc.desc||"";
+  document.getElementById("incEditAmt").value=inc.amt;
+  document.getElementById("incomeEditModal").classList.add("show");
+}
+function closeIncomeModal(){ document.getElementById("incomeEditModal").classList.remove("show"); }
+function delIncome(id){ const inc=loadIncome().filter(i=>i.id!==id); saveIncome(inc); renderFinance(); }
+function saveIncomeEdit(){
+  const id=window.currentIncomeId;
+  const src=document.getElementById("incEditSource").value;
+  const desc=document.getElementById("incEditDesc").value;
+  const amt=parseFloat(document.getElementById("incEditAmt").value);
+  const date=document.getElementById("incEditDate").value;
+  if(!amt || amt<=0 || !src) return;
+  const inc=loadIncome();
+  if(id){
+    const idx=inc.findIndex(i=>i.id===id);
+    if(idx>=0) inc[idx]={...inc[idx], date, src, desc, amt};
+  } else {
+    inc.push({id:Date.now(), date, src, desc, amt});
+  }
+  saveIncome(inc);
+  closeIncomeModal();
+  renderFinance();
+}
+
+function addExpense(){
+  window.currentExpenseId=null;
+  document.getElementById("expenseModalTitle").textContent="Add Expense";
+  document.getElementById("expEditDate").value=new Date().toISOString().slice(0,10);
+  document.getElementById("expEditCat").value="Food";
+  document.getElementById("expEditDesc").value="";
+  document.getElementById("expEditAmt").value="";
+  document.getElementById("expenseEditModal").classList.add("show");
+}
+function saveNewExpense(){
+  const cat=document.getElementById("expEditCat").value;
+  const desc=document.getElementById("expEditDesc").value;
+  const amt=parseFloat(document.getElementById("expEditAmt").value);
+  const date=document.getElementById("expEditDate").value || new Date().toISOString().slice(0,10);
+  if(!amt || amt<=0 || !desc) return;
+  const exp=loadExpenses();
+  exp.push({id:Date.now(), date, cat, desc, amt});
+  saveExpenses(exp);
+  closeExpenseModal();
+  renderFinance();
+}
+function delExpense(id){ const exp=loadExpenses().filter(e=>e.id!==id); saveExpenses(exp); renderFinance(); }
+function editExpense(id){
+  const exp=loadExpenses().find(e=>e.id===id);
+  if(!exp) return;
+  window.currentExpenseId=id;
+  document.getElementById("expenseModalTitle").textContent="Edit Expense";
+  document.getElementById("expEditDate").value=exp.date;
+  document.getElementById("expEditCat").value=exp.cat;
+  document.getElementById("expEditDesc").value=exp.desc;
+  document.getElementById("expEditAmt").value=exp.amt;
+  document.getElementById("expenseEditModal").classList.add("show");
+}
+function closeExpenseModal(){ document.getElementById("expenseEditModal").classList.remove("show"); }
+function saveExpenseEdit(){
+  const id=window.currentExpenseId;
+  const cat=document.getElementById("expEditCat").value;
+  const desc=document.getElementById("expEditDesc").value;
+  const amt=parseFloat(document.getElementById("expEditAmt").value);
+  const date=document.getElementById("expEditDate").value;
+  if(!amt || amt<=0 || !desc) return;
+  const exp=loadExpenses();
+  if(id){
+    const idx=exp.findIndex(e=>e.id===id);
+    if(idx>=0){
+      exp[idx]={...exp[idx], date, cat, desc, amt};
+      saveExpenses(exp);
+    }
+  } else {
+    exp.push({id:Date.now(), date, cat, desc, amt});
+    saveExpenses(exp);
+  }
+  closeExpenseModal();
+  renderFinance();
+}
+function calculateInvestmentValue(){
+  const principal=parseFloat(document.getElementById("savEditPrincipal").value)||0;
+  const rate=parseFloat(document.getElementById("savEditRate").value)||0;
+  const type=document.getElementById("savEditType").value;
+  const dateStr=document.getElementById("savEditDate").value;
+
+  if(!principal || !rate || !dateStr){
+    document.getElementById("savEditCurrentDisplay").textContent="₹0";
+    document.getElementById("savEditGainDisplay").textContent="+₹0 gain";
+    return;
+  }
+
+  const investDate=new Date(dateStr);
+  const today=new Date();
+  const diffTime=today-investDate;
+  const years=diffTime/(1000*60*60*24*365.25);
+
+  let current;
+  if(type==="Simple"){
+    current=principal*(1+(rate/100)*years);
+  } else {
+    current=principal*Math.pow(1+(rate/100), years);
+  }
+
+  const gain=current-principal;
+  document.getElementById("savEditCurrentDisplay").textContent="₹"+Math.round(current).toLocaleString("en-IN");
+  document.getElementById("savEditGainDisplay").textContent="+₹"+Math.round(gain).toLocaleString("en-IN")+" gain ("+((gain/principal)*100).toFixed(1)+"%)"
+}
+
+function editSavings(id){
+  const sav=loadSavings().find(s=>s.id===id);
+  if(!sav) return;
+  window.currentSavingsId=id;
+  document.getElementById("savingsModalTitle").textContent="Edit Investment";
+  document.getElementById("savEditName").value=sav.name;
+  document.getElementById("savEditCat").value=sav.cat;
+  document.getElementById("savEditDate").value=sav.date;
+  document.getElementById("savEditPrincipal").value=sav.principal;
+  document.getElementById("savEditRate").value=sav.rate;
+  document.getElementById("savEditType").value=sav.type;
+  document.getElementById("savingsEditModal").classList.add("show");
+  setTimeout(()=>calculateInvestmentValue(), 100);
+}
+function openSavingsModal(){
+  window.currentSavingsId=null;
+  document.getElementById("savingsModalTitle").textContent="Add Investment";
+  document.getElementById("savEditName").value="";
+  document.getElementById("savEditCat").value="Fixed Deposit";
+  document.getElementById("savEditDate").value=new Date().toISOString().slice(0,10);
+  document.getElementById("savEditPrincipal").value="";
+  document.getElementById("savEditRate").value="";
+  document.getElementById("savEditType").value="Compound";
+  document.getElementById("savingsEditModal").classList.add("show");
+  setTimeout(()=>calculateInvestmentValue(), 100);
+}
+function closeSavingsModal(){ document.getElementById("savingsEditModal").classList.remove("show"); }
+function saveSavingsEdit(){
+  const name=document.getElementById("savEditName").value;
+  const cat=document.getElementById("savEditCat").value;
+  const date=document.getElementById("savEditDate").value;
+  const principal=parseFloat(document.getElementById("savEditPrincipal").value);
+  const rate=parseFloat(document.getElementById("savEditRate").value);
+  const type=document.getElementById("savEditType").value;
+
+  if(!name || !principal || !rate || !date) return;
+
+  const investDate=new Date(date);
+  const today=new Date();
+  const diffTime=today-investDate;
+  const years=diffTime/(1000*60*60*24*365.25);
+
+  let current;
+  if(type==="Simple"){
+    current=principal*(1+(rate/100)*years);
+  } else {
+    current=principal*Math.pow(1+(rate/100), years);
+  }
+
+  const gain=current-principal;
+  const sav=loadSavings();
+  const id=window.currentSavingsId;
+  if(id){
+    const idx=sav.findIndex(s=>s.id===id);
+    if(idx>=0) sav[idx]={id, name, cat, date, principal, rate, type, current, gain};
+  } else {
+    sav.push({id:Date.now(), name, cat, date, principal, rate, type, current, gain});
+  }
+  saveSavings(sav);
+  closeSavingsModal();
+  renderFinance();
+}
+function delSavings(id){ const sav=loadSavings().filter(s=>s.id!==id); saveSavings(sav); renderFinance(); }
+function editStock(id){
+  const st=loadStocks().find(s=>s.id===id);
+  if(!st) return;
+  window.currentStockId=id;
+  document.getElementById("stockModalTitle").textContent="Edit Stock";
+  document.getElementById("stockEditTicker").value=st.ticker;
+  document.getElementById("stockEditDate").value=st.date;
+  document.getElementById("stockEditShares").value=st.shares;
+  document.getElementById("stockEditAvgPrice").value=st.avgPrice;
+  document.getElementById("stockEditCurrent").value=st.current;
+  document.getElementById("stockEditModal").classList.add("show");
+}
+function openStockModal(){
+  window.currentStockId=null;
+  document.getElementById("stockModalTitle").textContent="Add Stock";
+  document.getElementById("stockEditTicker").value="";
+  document.getElementById("stockEditDate").value=new Date().toISOString().slice(0,10);
+  document.getElementById("stockEditShares").value="";
+  document.getElementById("stockEditAvgPrice").value="";
+  document.getElementById("stockEditCurrent").value="";
+  document.getElementById("stockEditModal").classList.add("show");
+}
+function closeStockModal(){ document.getElementById("stockEditModal").classList.remove("show"); }
+function saveStockEdit(){
+  const ticker=document.getElementById("stockEditTicker").value.toUpperCase();
+  const date=document.getElementById("stockEditDate").value;
+  const shares=parseFloat(document.getElementById("stockEditShares").value);
+  const avgPrice=parseFloat(document.getElementById("stockEditAvgPrice").value);
+  const current=parseFloat(document.getElementById("stockEditCurrent").value);
+  if(!ticker || !shares || !avgPrice || !current) return;
+  const st=loadStocks();
+  const id=window.currentStockId;
+  if(id){
+    const idx=st.findIndex(s=>s.id===id);
+    if(idx>=0) st[idx]={id, ticker, date, shares, avgPrice, current, value:shares*current};
+  } else {
+    st.push({id:Date.now(), ticker, date, shares, avgPrice, current, value:shares*current});
+  }
+  saveStocks(st);
+  closeStockModal();
+  renderFinance();
+}
+function delStock(id){ const st=loadStocks().filter(s=>s.id!==id); saveStocks(st); renderFinance(); }
+function showBarTooltip(el){ const title=el.getAttribute('title'); if(title) alert(title); }
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+function initDateSelectors(){
+  const now=new Date();
+  const currentYear=now.getFullYear();
+
+  const monthSelect=document.getElementById("monthSelect");
+  const yearSelect=document.getElementById("yearSelect");
+
+  if(!monthSelect.value || monthSelect.value===""){
+    monthSelect.value=String(now.getMonth());
+  }
+
+  if(!yearSelect.value || yearSelect.value===""){
+    yearSelect.innerHTML="";
+    for(let y=2020; y<=currentYear; y++){
+      const opt=document.createElement("option");
+      opt.value=y;
+      opt.textContent=y;
+      if(y===currentYear) opt.selected=true;
+      yearSelect.appendChild(opt);
+    }
+  } else {
+    if(yearSelect.innerHTML===""){
+      for(let y=2020; y<=currentYear; y++){
+        const opt=document.createElement("option");
+        opt.value=y;
+        opt.textContent=y;
+        yearSelect.appendChild(opt);
+      }
+    }
+  }
+}
+
+function getDateRange(){
+  const mode=document.getElementById("viewMode").value;
+  const now=new Date();
+  const currentYear=now.getFullYear();
+  const currentMonth=now.getMonth();
+
+  let startDate, endDate, label;
+
+  if(mode==="year"){
+    startDate=new Date(currentYear, 0, 1);
+    endDate=new Date(currentYear, 11, 31, 23, 59, 59);
+    label=`${currentYear} Full Year`;
+  } else if(mode==="month"){
+    const monthVal=document.getElementById("monthSelect").value;
+    const yearVal=document.getElementById("yearSelect").value;
+
+    if(!monthVal || !yearVal){
+      startDate=new Date(2020, 0, 1);
+      endDate=new Date();
+      label="All Time";
+    } else {
+      const month=parseInt(monthVal);
+      const year=parseInt(yearVal);
+
+      if(month===-1){
+        startDate=new Date(year, 0, 1);
+        endDate=new Date(year, 11, 31, 23, 59, 59);
+        label=`${year} Full Year`;
+      } else {
+        startDate=new Date(year, month, 1);
+        endDate=new Date(year, month+1, 0, 23, 59, 59);
+        label=`${MONTHS[month]} ${year}`;
+      }
+    }
+  } else {
+    startDate=new Date(2020, 0, 1);
+    endDate=new Date();
+    label="All Time";
+  }
+
+  document.getElementById("dateRangeLabel").textContent=label;
+  return {startDate, endDate};
+}
+
+function isDateInRange(dateStr, range){
+  try{
+    const parts=dateStr.split('-');
+    if(parts.length!==3) return false;
+
+    const d=new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+    if(isNaN(d.getTime())) return false;
+
+    const dStart=new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const dEnd=new Date(dStart);
+    dEnd.setHours(23, 59, 59);
+
+    return dStart>=range.startDate && dEnd<=range.endDate;
+  }catch(e){
+    return false;
+  }
+}
+
+function updateDateFilters(){
+  const mode=document.getElementById("viewMode").value;
+  if(mode==="month"){
+    document.getElementById("monthYearSelectors").style.display="flex";
+    if(!document.getElementById("monthSelect").value){
+      document.getElementById("monthSelect").value=new Date().getMonth();
+    }
+    if(!document.getElementById("yearSelect").value){
+      document.getElementById("yearSelect").value=new Date().getFullYear();
+    }
+  } else {
+    document.getElementById("monthYearSelectors").style.display="none";
+  }
+  getDateRange();
+  filterByDate();
+}
+
+function getFilteredIncome(){
+  const allInc=loadIncome();
+  const range=getDateRange();
+  return allInc.filter(i=>isDateInRange(i.date, range));
+}
+
+function getFilteredExpenses(){
+  const allExp=loadExpenses();
+  const range=getDateRange();
+  return allExp.filter(e=>isDateInRange(e.date, range));
+}
+
+function getFilteredSavings(){
+  const allSav=loadSavings();
+  const range=getDateRange();
+  return allSav.filter(s=>isDateInRange(s.date, range));
+}
+
+function getFilteredStocks(){
+  const allStocks=loadStocks();
+  const range=getDateRange();
+  return allStocks.filter(st=>isDateInRange(st.date, range));
+}
+
+function filterByDate(){ renderFinance(); }
+function renderFinance(){
+  seedDataIfEmpty();
+  initDateSelectors();
+
+  const expenses=getFilteredExpenses();
+  const income=getFilteredIncome();
+
+  console.log('Filter Mode:', document.getElementById("viewMode").value);
+  console.log('Selected Month:', document.getElementById("monthSelect").value);
+  console.log('Selected Year:', document.getElementById("yearSelect").value);
+  console.log('Filtered Expenses:', expenses.length);
+  console.log('Filtered Income:', income.length);
+  const savings=getFilteredSavings();
+  const stocks=getFilteredStocks();
+
+  /* Calculate totals */
+  let totalExp=0, totalInc=0, totalSavingsInvest=0, totalStockVal=0, totalGains=0;
+  const expByCat={};
+  const gainByCat={};
+
+  expenses.forEach(e=>{ totalExp+=e.amt; expByCat[e.cat]=(expByCat[e.cat]||0)+e.amt; });
+  income.forEach(i=>{ totalInc+=i.amt; });
+  savings.forEach(s=>{ totalSavingsInvest+=s.current; totalGains+=s.gain; gainByCat[s.cat]=(gainByCat[s.cat]||0)+s.gain; });
+  stocks.forEach(st=>{ totalStockVal+=st.value||0; });
+
+  const availableCash=totalInc-totalExp;
+  const totalSavings=totalInc-totalExp+totalSavingsInvest;
+  const netWorth=totalInc-totalExp+totalSavingsInvest+totalStockVal;
+
+  document.getElementById("totalExpV").textContent=fmt(totalExp);
+  document.getElementById("totalSavingsV").textContent=fmt(totalSavings);
+  document.getElementById("totalStockV").textContent=fmt(totalStockVal);
+  document.getElementById("netWorthV").textContent=fmt(netWorth);
+  document.getElementById("totalGainsV").textContent=fmt(totalGains);
+
+  /* Bar chart: last 6 months (use unfiltered data for consistency) */
+  const now=new Date();
+  const months=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(now.getFullYear(), now.getMonth()-i, 1);
+    months.push({y:d.getFullYear(), m:d.getMonth(), label:d.toLocaleDateString(undefined,{month:"short"})});
+  }
+  const allIncome=loadIncome();
+  const allExpenses=loadExpenses();
+  const monthData=months.map(mo=>{
+    let mi=0, me=0;
+    allIncome.forEach(inc=>{ const id=new Date(inc.date); if(id.getFullYear()===mo.y && id.getMonth()===mo.m) mi+=inc.amt; });
+    allExpenses.forEach(exp=>{ const ed=new Date(exp.date); if(ed.getFullYear()===mo.y && ed.getMonth()===mo.m) me+=exp.amt; });
+    return {label:mo.label, mi, me};
+  });
+  const maxV=Math.max(1, ...monthData.map(m=>Math.max(m.mi,m.me)));
+  document.getElementById("barchart").innerHTML=monthData.map(m=>`
+    <div class="barcol">
+      <div class="bars">
+        <div class="bar" style="height:${Math.max(3,m.mi/maxV*50)}px; background:var(--accent)" title="Income: ${fmt(m.mi)}" onclick="showBarTooltip(this)"></div>
+        <div class="bar" style="height:${Math.max(3,m.me/maxV*50)}px; background:var(--red)" title="Expense: ${fmt(m.me)}" onclick="showBarTooltip(this)"></div>
+      </div>
+      <div class="lab">${m.label}</div>
+    </div>`).join("");
+
+  /* Create donut charts */
+  createDonutChart(expByCat, "expenseChartContainer", "expenseLegend");
+  createDonutChart(gainByCat, "gainChartContainer", "gainLegend");
+
+  /* Income list */
+  const sortedInc=[...income].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  let incListHtml="";
+  sortedInc.forEach(i=>{ incListHtml+=`<div class="txrow"><span>${i.date}</span><span class="cat">${i.src}</span><span class="note">${i.desc||"—"}</span><span class="amt pos">+${fmt(i.amt)}</span><button class="edit" onclick="editIncome(${i.id})">Edit</button><button class="del" onclick="delIncome(${i.id})">&times;</button></div>`; });
+  document.getElementById("incomeList").innerHTML=incListHtml||"<div style='color:var(--txt-dim); padding:12px'>No income yet</div>";
+
+  /* Expense list */
+  const sorted=[...expenses].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  let expListHtml="";
+  sorted.forEach(e=>{ expListHtml+=`<div class="txrow"><span>${e.date}</span><span class="cat">${e.cat}</span><span class="note">${e.desc}</span><span class="amt neg">-${fmt(e.amt)}</span><button class="edit" onclick="editExpense(${e.id})">Edit</button><button class="del" onclick="delExpense(${e.id})">&times;</button></div>`; });
+  document.getElementById("expenseList").innerHTML=expListHtml||"<div style='color:var(--txt-dim); padding:12px'>No expenses yet</div>";
+
+  /* Savings list */
+  const sortedSav=[...savings].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  let savListHtml="";
+  sortedSav.forEach(s=>{ savListHtml+=`<div class="txrow" style="flex-wrap:wrap"><span>${s.date}</span><span class="cat">${s.cat}</span><span class="note">${s.name} • Prin: ${fmt(s.principal)} • ${s.rate}%</span><span class="amt pos">+${fmt(s.gain)}</span><button class="edit" onclick="editSavings(${s.id})">Edit</button><button class="del" onclick="delSavings(${s.id})">&times;</button></div>`; });
+  document.getElementById("savingsList").innerHTML=savListHtml||"<div style='color:var(--txt-dim); padding:12px'>No investments yet</div>";
+
+  /* Stocks list */
+  const sortedStocks=[...stocks].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  let stListHtml="";
+  sortedStocks.forEach(st=>{ const val=st.shares*st.current; stListHtml+=`<div class="txrow"><span>${st.date}</span><span class="cat">${st.ticker}</span><span class="note">${st.shares} shares @ ${fmt(st.current)}</span><span class="amt pos">${fmt(val)}</span><button class="edit" onclick="editStock(${st.id})">Edit</button><button class="del" onclick="delStock(${st.id})">&times;</button></div>`; });
+  document.getElementById("stocksList").innerHTML=stListHtml||"<div style='color:var(--txt-dim); padding:12px'>No stocks yet</div>";
+}
+
+/* ================= AUTHENTICATION & SYNC ================= */
+const API_URL = 'http://localhost:5000/api';
+let currentUser = null;
+let authToken = null;
+
+// Check if user is already logged in
+function checkAuthStatus() {
+  const savedToken = localStorage.getItem('authToken');
+  const savedUser = localStorage.getItem('currentUser');
+  if (savedToken && savedUser) {
+    authToken = savedToken;
+    currentUser = JSON.parse(savedUser);
+    hideAuthScreen();
+    loadUserDataFromMongo();
+    renderFinance();
+  }
+}
+
+async function loadUserDataFromMongo() {
+  if (!currentUser || !authToken || authToken === 'offline-token') return;
+
+  const typeMap = {
+    expenses: 'finExpenses',
+    income: 'finIncome',
+    savings: 'finSavings',
+    stocks: 'finStocks'
+  };
+
+  for (const [dataType, localKey] of Object.entries(typeMap)) {
+    try {
+      const response = await fetch(`${API_URL}/sync/data/${dataType}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (!response.ok) continue;
+
+      const result = await response.json();
+      if (result && result.data !== null && result.data !== undefined) {
+        localStorage.setItem(getStorageKey(localKey), JSON.stringify(result.data));
+      }
+    } catch (err) {
+      console.log(`Failed to load ${dataType} from MongoDB`, err);
+    }
+  }
+}
+
+// Toggle password visibility
+function togglePasswordVisibility(inputId) {
+  const input = document.getElementById(inputId);
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+// Show/hide auth forms
+function showLoginForm() {
+  document.getElementById('loginForm').style.display = 'block';
+  document.getElementById('registerForm').style.display = 'none';
+  document.getElementById('authStatus').textContent = '';
+}
+
+function showRegisterForm() {
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('registerForm').style.display = 'block';
+  document.getElementById('authStatus').textContent = '';
+}
+
+// Handle Login
+async function handleLogin() {
+  const userId = document.getElementById('loginUserId').value;
+  const password = document.getElementById('loginPassword').value;
+  const statusDiv = document.getElementById('authStatus');
+
+  if (!userId || !password) {
+    statusDiv.innerHTML = '<span style="color:var(--red)">❌ Please fill all fields</span>';
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, password })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      authToken = result.token;
+      currentUser = { userId };
+      localStorage.setItem('authToken', authToken);
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      await loadUserDataFromMongo();
+      statusDiv.innerHTML = '<span style="color:var(--accent)">✅ Login successful!</span>';
+      setTimeout(() => hideAuthScreen(), 500);
+    } else {
+      statusDiv.innerHTML = `<span style="color:var(--red)">❌ ${result.error}</span>`;
+    }
+  } catch (err) {
+    statusDiv.innerHTML = '<span style="color:var(--red)">❌ Cannot reach server - Using offline mode</span>';
+    // Allow offline login with local storage
+    if ((userId === 'demo' && password === 'demo123') || (userId === 'demo1' && password === '12345678')) {
+      authToken = 'offline-token';
+      currentUser = { userId };
+      localStorage.setItem('authToken', authToken);
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      setTimeout(() => hideAuthScreen(), 500);
+    }
+  }
+}
+
+// Handle Register
+async function handleRegister() {
+  const userId = document.getElementById('regUserId').value;
+  const email = document.getElementById('regEmail').value;
+  const password = document.getElementById('regPassword').value;
+  const statusDiv = document.getElementById('authStatus');
+
+  if (!userId || !email || !password) {
+    statusDiv.innerHTML = '<span style="color:var(--red)">❌ Please fill all fields</span>';
+    return;
+  }
+
+  if (password.length < 6) {
+    statusDiv.innerHTML = '<span style="color:var(--red)">❌ Password must be at least 6 characters</span>';
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, email, password })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      authToken = result.token;
+      currentUser = { userId };
+      localStorage.setItem('authToken', authToken);
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      statusDiv.innerHTML = '<span style="color:var(--accent)">✅ Account created! Logging in...</span>';
+      setTimeout(() => hideAuthScreen(), 500);
+    } else {
+      statusDiv.innerHTML = `<span style="color:var(--red)">❌ ${result.error}</span>`;
+    }
+  } catch (err) {
+    statusDiv.innerHTML = '<span style="color:var(--red)">❌ Cannot reach server. Try again when online.</span>';
+  }
+}
+
+// Hide auth screen
+function hideAuthScreen() {
+  document.getElementById('authScreen').style.display = 'none';
+  updateProfileMenu();
+}
+
+// Update profile menu with current user
+function updateProfileMenu() {
+  if(currentUser) {
+    document.getElementById('profileUserId').textContent = currentUser.userId;
+  }
+}
+
+// Toggle profile menu dropdown
+function toggleProfileMenu() {
+  const menu = document.getElementById('profileMenu');
+  menu.classList.toggle('show');
+  document.addEventListener('click', closeProfileMenuOnClickOutside);
+}
+
+// Close profile menu when clicking outside
+function closeProfileMenuOnClickOutside(e) {
+  const menu = document.getElementById('profileMenu');
+  const btn = document.querySelector('.profile-btn');
+  if(!menu.contains(e.target) && !btn.contains(e.target)) {
+    menu.classList.remove('show');
+    document.removeEventListener('click', closeProfileMenuOnClickOutside);
+  }
+}
+
+// Logout function
+function logout() {
+  authToken = null;
+  currentUser = null;
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('currentUser');
+  document.getElementById('profileMenu').classList.remove('show');
+  document.getElementById('authScreen').style.display = 'flex';
+  showLoginForm();
+}
+
+
+// Sync data to MongoDB
+async function syncToMongoDB(dataType, data) {
+  if (!authToken || authToken === 'offline-token') return false;
+
+  try {
+    const response = await fetch(`${API_URL}/sync/data`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ dataType, data })
+    });
+
+    return response.ok;
+  } catch (err) {
+    console.log('Sync failed - will retry later');
+    return false;
+  }
+}
+
+// Perform pending sync when internet returns
+async function performPendingSync() {
+  const pendingSync = JSON.parse(localStorage.getItem('pendingSync') || '{}');
+
+  for (const [dataType, data] of Object.entries(pendingSync)) {
+    const synced = await syncToMongoDB(dataType, data);
+    if (synced) {
+      delete pendingSync[dataType];
+    }
+  }
+
+  localStorage.setItem('pendingSync', JSON.stringify(pendingSync));
+}
+
+// Override save functions to also sync to MongoDB
+const originalSaveExpenses = saveExpenses;
+saveExpenses = function(list) {
+  originalSaveExpenses(list);
+  syncToMongoDB('expenses', list);
+  const pendingSync = JSON.parse(localStorage.getItem('pendingSync') || '{}');
+  pendingSync['expenses'] = list;
+  localStorage.setItem('pendingSync', JSON.stringify(pendingSync));
+};
+
+const originalSaveIncome = saveIncome;
+saveIncome = function(list) {
+  originalSaveIncome(list);
+  syncToMongoDB('income', list);
+  const pendingSync = JSON.parse(localStorage.getItem('pendingSync') || '{}');
+  pendingSync['income'] = list;
+  localStorage.setItem('pendingSync', JSON.stringify(pendingSync));
+};
+
+const originalSaveSavings = saveSavings;
+saveSavings = function(list) {
+  originalSaveSavings(list);
+  syncToMongoDB('savings', list);
+  const pendingSync = JSON.parse(localStorage.getItem('pendingSync') || '{}');
+  pendingSync['savings'] = list;
+  localStorage.setItem('pendingSync', JSON.stringify(pendingSync));
+};
+
+const originalSaveStocks = saveStocks;
+saveStocks = function(list) {
+  originalSaveStocks(list);
+  syncToMongoDB('stocks', list);
+  const pendingSync = JSON.parse(localStorage.getItem('pendingSync') || '{}');
+  pendingSync['stocks'] = list;
+  localStorage.setItem('pendingSync', JSON.stringify(pendingSync));
+};
+
+// Initialize auth
+checkAuthStatus();
+
+/* ================= PWA & PERMISSIONS ================= */
+// Register Service Worker
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js')
+      .then(reg=>{ console.log('✅ Service Worker registered:', reg); })
+      .catch(err=>{ console.log('❌ Service Worker registration failed:', err); });
+  });
+}
+
+// Request Notification Permission
+function requestNotificationPermission(){
+  if(!('Notification' in window)) return;
+
+  if(Notification.permission==='granted'){
+    console.log('✅ Notification permission already granted');
+    return;
+  }
+
+  if(Notification.permission!=='denied'){
+    Notification.requestPermission().then(permission=>{
+      if(permission==='granted'){
+        console.log('✅ Notification permission granted');
+        showNotificationTest();
+      }
+    });
+  }
+}
+
+// Request Microphone Permission for Text-to-Speech
+function requestMicrophonePermission(){
+  if(!('speechSynthesis' in window)) return;
+
+  if('permissions' in navigator){
+    navigator.permissions.query({name:'microphone'})
+      .then(result=>{
+        if(result.state==='granted'){
+          console.log('✅ Microphone permission already granted');
+        } else if(result.state==='prompt'){
+          console.log('⏳ Microphone permission pending (user will be asked)');
+        }
+      });
+  }
+}
+
+// Show test notification
+function showNotificationTest(){
+  if(Notification.permission!=='granted') return;
+
+  const notification=new Notification('Gains Ledger Ready! 🚀',{
+    body:'Notifications enabled. You will receive meal reminders 1 hour before each meal.',
+    icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect fill="%23c3ff4d" width="192" height="192"/><text x="96" y="140" font-size="100" font-weight="bold" text-anchor="middle" fill="%23000">GL</text></svg>',
+    badge:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect fill="%23c3ff4d" width="96" height="96"/><text x="48" y="70" font-size="50" text-anchor="middle" fill="%23000">G</text></svg>',
+    tag:'gains-ledger-welcome',
+    requireInteraction:false,
+    vibrate:[100,50,100]
+  });
+
+  setTimeout(()=>notification.close(), 5000);
+}
+
+// Initialize PWA features after login
+function initPWAFeatures(){
+  if(!currentUser) return;
+
+  requestNotificationPermission();
+  requestMicrophonePermission();
+
+  console.log('📱 PWA features initialized for user:', currentUser.userId);
+  console.log('🔔 Notifications:', Notification.permission);
+  console.log('🎤 Text-to-Speech available:', 'speechSynthesis' in window);
+  console.log('⚙️ Service Worker:', 'serviceWorker' in navigator);
+}
+
+// Request permission on app open
+setTimeout(()=>{
+  if(currentUser){
+    initPWAFeatures();
+  }
+}, 2000);
+
+/* ================= MEAL NOTIFICATIONS ================= */
+const MEAL_TIMES={
+  b:{label:"🍳 Breakfast", time:"08:00", remind:"07:00"},
+  l:{label:"🍜 Lunch", time:"13:00", remind:"12:00"},
+  pw:{label:"⚡ Pre-Workout", time:"17:00", remind:"16:00"},
+  pow:{label:"💪 Post-Workout", time:"19:15", remind:"18:15"},
+  din:{label:"🍽️ Dinner", time:"19:45", remind:"18:45"}
+};
+
+let notificationPrefs={};
+let notificationState={lastNotified:{}};
+let notificationSoundEnabled=true;
+
+function getNotificationStorageKey(key){ return currentUser?`${currentUser.userId}_notif_${key}`:key; }
+
+function loadNotificationPrefs(){
+  try{
+    const prefs=JSON.parse(localStorage.getItem(getNotificationStorageKey("prefs"))||"{}");
+    notificationPrefs={enabled:prefs.enabled!==false, meals:{b:true,l:true,pw:true,pow:true,din:true}, ...prefs};
+  }catch(e){
+    notificationPrefs={enabled:true, meals:{b:true,l:true,pw:true,pow:true,din:true}};
+  }
+  try{
+    notificationSoundEnabled=JSON.parse(localStorage.getItem(getNotificationStorageKey("sound"))||"true");
+  }catch(e){}
+}
+
+function saveNotificationPrefs(){
+  try{
+    localStorage.setItem(getNotificationStorageKey("prefs"), JSON.stringify(notificationPrefs));
+  }catch(e){}
+}
+
+function openNotificationSettings(){
+  loadNotificationPrefs();
+  document.getElementById("mainToggle").classList.toggle("checked", notificationPrefs.enabled);
+  document.getElementById("soundToggle").classList.toggle("checked", notificationSoundEnabled);
+  Object.keys(MEAL_TIMES).forEach(key=>{
+    const checkbox=document.getElementById("notify-"+key);
+    if(checkbox) checkbox.checked=notificationPrefs.meals[key]!==false;
+  });
+  document.getElementById("notificationSettings").classList.add("show");
+}
+
+function closeNotificationSettings(){
+  document.getElementById("notificationSettings").classList.remove("show");
+}
+
+function toggleNotifications(){
+  notificationPrefs.enabled=!notificationPrefs.enabled;
+  document.getElementById("mainToggle").classList.toggle("checked");
+  saveNotificationPrefs();
+  if(notificationPrefs.enabled) requestNotificationPermission();
+}
+
+function toggleNotificationSound(){
+  notificationSoundEnabled=!notificationSoundEnabled;
+  document.getElementById("soundToggle").classList.toggle("checked");
+  try{
+    localStorage.setItem(getNotificationStorageKey("sound"), JSON.stringify(notificationSoundEnabled));
+  }catch(e){}
+}
+
+function saveMealPreferences(){
+  Object.keys(MEAL_TIMES).forEach(key=>{
+    const checkbox=document.getElementById("notify-"+key);
+    if(checkbox) notificationPrefs.meals[key]=checkbox.checked;
+  });
+  saveNotificationPrefs();
+}
+
+function requestNotificationPermission(){
+  if("Notification" in window && Notification.permission==="default"){
+    Notification.requestPermission();
+  }
+}
+
+function getMealDetails(key){
+  const idx=getIdx(dateKeyOf(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()), key, cycleDay(new Date()), SLOTS.find(s=>s.key===key).pool.length);
+  const slot=SLOTS.find(s=>s.key===key);
+  if(!slot) return null;
+  const meal=slot.pool[idx];
+  const m=macros(meal.items);
+  const items=meal.items.map(([id,g])=>`${ING[id].n} ${g}${(id==="buttermilk"||id==="greentea")?"ml":"g"}`);
+  return {name:meal.name, items, macros:m, time:MEAL_TIMES[key].time};
+}
+
+function showMealNotification(key){
+  if(!notificationPrefs.enabled || !notificationPrefs.meals[key]) return;
+  if(notificationState.lastNotified[key] && Date.now()-notificationState.lastNotified[key]<3600000) return;
+
+  const meal=getMealDetails(key);
+  if(!meal) return;
+
+  const mealTime=MEAL_TIMES[key];
+  const container=document.getElementById("notificationContainer");
+
+  const itemsHtml=meal.items.slice(0,3).map(item=>`<div class="notification-item">${item}</div>`).join("");
+  const moreItems=meal.items.length>3?`<div class="notification-item">... and ${meal.items.length-3} more</div>`:"";
+
+  const notifEl=document.createElement("div");
+  notifEl.className="notification-card";
+  notifEl.innerHTML=`
+    <div class="notification-header">
+      <div>
+        <div class="notification-title">${mealTime.label}</div>
+        <div class="notification-time">Meal in 1 hour</div>
+      </div>
+      <button class="notification-close" onclick="this.parentElement.parentElement.classList.add('closing'); setTimeout(()=>this.parentElement.parentElement.remove(),300)">×</button>
+    </div>
+    <div class="notification-meal">${meal.name}</div>
+    <div class="notification-items">
+      ${itemsHtml}
+      ${moreItems}
+      <div class="notification-item" style="margin-top:8px; color:var(--accent); font-weight:700">Macros: ${meal.macros.p.toFixed(0)}g P • ${meal.macros.starch.toFixed(0)}g Carbs • ${meal.macros.fa.toFixed(0)}g Fat</div>
+    </div>
+    <div class="notification-footer">
+      <button class="btn-remind-later" onclick="remindLater('${key}'); this.parentElement.parentElement.classList.add('closing'); setTimeout(()=>this.parentElement.parentElement.remove(),300)">Remind in 30min</button>
+      <button class="btn-speak" onclick="speakMealNotification('${key}', ${JSON.stringify(meal).replace(/"/g,'&quot;')})">🔊 Speak</button>
+    </div>
+  `;
+
+  container.appendChild(notifEl);
+  notificationState.lastNotified[key]=Date.now();
+
+  if(notificationSoundEnabled) playNotificationSound();
+
+  if("Notification" in window && Notification.permission==="granted"){
+    const notifBody=`${meal.name}\n\nIngredients: ${meal.items.slice(0,2).join(", ")}${meal.items.length>2?" ...":""}`;
+
+    try{
+      const notification=new Notification(mealTime.label, {
+        body:notifBody,
+        icon:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23c3ff4d' width='192' height='192'/><text x='96' y='140' font-size='100' font-weight='bold' text-anchor='middle' fill='%23000'>GL</text></svg>",
+        badge:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%23c3ff4d' width='96' height='96'/><text x='48' y='70' font-size='50' text-anchor='middle' fill='%23000'>G</text></svg>",
+        tag:`meal-${key}`,
+        requireInteraction:true,
+        vibrate:[200,100,200,100,200]
+      });
+
+      notification.onclick=()=>{
+        window.focus();
+        notification.close();
+      };
+    }catch(e){
+      console.error('❌ Notification error:', e);
+    }
+  }
+}
+
+function remindLater(key){
+  delete notificationState.lastNotified[key];
+}
+
+function playNotificationSound(){
+  const audioContext=new (window.AudioContext||window.webkitAudioContext)();
+  const now=audioContext.currentTime;
+  const osc=audioContext.createOscillator();
+  const gain=audioContext.createGain();
+  osc.connect(gain);
+  gain.connect(audioContext.destination);
+  osc.frequency.value=800;
+  osc.type="sine";
+  gain.gain.setValueAtTime(0.3, now);
+  gain.gain.exponentialRampToValueAtTime(0.01, now+0.3);
+  osc.start(now);
+  osc.stop(now+0.3);
+}
+
+function speakMealNotification(key, meal){
+  if(!('speechSynthesis' in window)){
+    alert('Text-to-Speech not supported on this device');
+    return;
+  }
+
+  const mealTime=MEAL_TIMES[key];
+  const userName=currentUser?.userId||"friend";
+  const itemsText=meal.items.slice(0,4).join(", ");
+  const message=`Hey ${userName}, it's time to prepare your meal. Today's ${mealTime.label.toLowerCase()} is ${meal.name}. You need ${itemsText}. Let's go!`;
+
+  try{
+    const utterance=new SpeechSynthesisUtterance(message);
+    utterance.rate=0.95;
+    utterance.pitch=1;
+    utterance.onstart=()=>console.log('🔊 Speaking notification');
+    utterance.onend=()=>console.log('✅ Notification spoken');
+    utterance.onerror=(e)=>console.error('❌ Speech error:', e);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  }catch(e){
+    console.error('❌ Error in text-to-speech:', e);
+    alert('Could not speak notification');
+  }
+}
+
+function checkMealReminders(){
+  if(!currentUser) return;
+
+  const now=new Date();
+  const hours=String(now.getHours()).padStart(2,"0");
+  const mins=String(now.getMinutes()).padStart(2,"0");
+  const currentTime=`${hours}:${mins}`;
+
+  Object.entries(MEAL_TIMES).forEach(([key,meal])=>{
+    if(currentTime===meal.remind) showMealNotification(key);
+  });
+}
+
+// Initialize notifications
+loadNotificationPrefs();
+requestNotificationPermission();
+setInterval(checkMealReminders, 60000);
+checkMealReminders();
+</script>
+</body>
+</html>

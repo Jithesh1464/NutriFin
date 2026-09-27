@@ -1,0 +1,74 @@
+{
+  "name": "Gains Ledger - Nutrition & Finance",
+  "short_name": "Gains Ledger",
+  "description": "Track your nutrition, fitness, and personal finances with intelligent meal planning and investment tracking",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0b0c",
+  "theme_color": "#c3ff4d",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23c3ff4d' width='192' height='192'/><text x='96' y='140' font-size='100' font-weight='bold' text-anchor='middle' fill='%23000'>GL</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%23c3ff4d' width='512' height='512'/><text x='256' y='380' font-size='280' font-weight='bold' text-anchor='middle' fill='%23000'>GL</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23c3ff4d' width='180' height='180' rx='40'/><text x='90' y='135' font-size='90' font-weight='bold' text-anchor='middle' fill='%23000'>GL</text></svg>",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["productivity", "finance"],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><rect fill='%230a0b0c' width='540' height='720'/><text x='270' y='360' font-size='60' text-anchor='middle' fill='%23c3ff4d'>Gains Ledger</text></svg>",
+      "sizes": "540x720",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'><rect fill='%230a0b0c' width='1280' height='720'/><text x='640' y='360' font-size='60' text-anchor='middle' fill='%23c3ff4d'>Gains Ledger</text></svg>",
+      "sizes": "1280x720",
+      "type": "image/svg+xml",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add Income",
+      "short_name": "Income",
+      "description": "Quickly add your income/salary",
+      "url": "/?action=add-income",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%23c3ff4d' width='96' height='96'/><text x='48' y='70' font-size='50' text-anchor='middle' fill='%23000'>💰</text></svg>",
+          "sizes": "96x96",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Add Expense",
+      "short_name": "Expense",
+      "description": "Quickly log an expense",
+      "url": "/?action=add-expense",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%23ff7a7a' width='96' height='96'/><text x='48' y='70' font-size='50' text-anchor='middle' fill='%23fff'>📊</text></svg>",
+          "sizes": "96x96",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ]
+}
