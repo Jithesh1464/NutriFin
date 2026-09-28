@@ -8,9 +8,17 @@ const urlsToCache = [
 // Install Service Worker
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
-      .catch(err => console.log('Cache install error:', err))
+    Promise.all(
+      urlsToCache.map(url => {
+        try {
+          return fetch(url, { cache: 'no-store' })
+            .then(res => caches.open(CACHE_NAME).then(cache => cache.put(url, res.clone())))
+            .catch(() => {});
+        } catch (err) {
+          return Promise.resolve();
+        }
+      })
+    )
   );
   self.skipWaiting();
 });
@@ -33,7 +41,9 @@ self.addEventListener('activate', event => {
 
 // Fetch Event - Network first, fallback to cache
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') {
+  const requestUrl = new URL(event.request.url);
+
+  if (event.request.method !== 'GET' || requestUrl.protocol === 'file:' || requestUrl.origin === 'null') {
     return;
   }
 

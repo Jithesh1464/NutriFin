@@ -161,14 +161,14 @@ select.swap option{background:var(--bg2); color:var(--txt); padding:6px}
 .donut-svg{width:100%; height:100%}
 .donut-segment{cursor:pointer; transition:all .2s ease; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))}
 .donut-segment:hover{transform:scale(1.05) translate(0,-1px); filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5))}
-.donut-center-text{position:absolute; width:100%; height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column; pointer-events:none}
-.donut-total{font-size:24px; font-weight:800; color:var(--txt)}
-.donut-label{font-size:10px; color:var(--txt-dim); margin-top:2px; letter-spacing:.03em; text-transform:uppercase; font-weight:600}
+.donut-center-text{position:absolute; width:100%; height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column; pointer-events:none; padding:18px; box-sizing:border-box}
+.donut-total{font-size:clamp(12px,2.2vw,24px); font-weight:800; color:var(--txt); line-height:1.1; text-align:center; max-width:90px; overflow-wrap:anywhere; word-break:break-word; white-space:normal}
+.donut-label{font-size:10px; color:var(--txt-dim); margin-top:2px; letter-spacing:.03em; text-transform:uppercase; font-weight:600; text-align:center}
 .donut-legend{flex:1; min-width:180px; display:flex; flex-direction:column; gap:10px}
 .donut-legend-item{display:flex; align-items:center; gap:10px; font-size:12px; word-break:break-word}
 .donut-legend-color{width:11px; height:11px; border-radius:2px; flex:none; min-width:11px}
-.donut-legend-label{flex:1; min-width:100px; color:var(--txt); word-break:break-word; overflow-wrap:break-word}
-.donut-legend-amt{color:var(--txt-dim); font-weight:700; text-align:right; flex-shrink:0; min-width:55px; word-break:break-word; overflow-wrap:break-word}
+.donut-legend-label{flex:1; min-width:100px; color:var(--txt); word-break:break-word; overflow-wrap:anywhere}
+.donut-legend-amt{color:var(--txt-dim); font-weight:700; text-align:right; flex-shrink:0; min-width:60px; word-break:break-word; overflow-wrap:anywhere}
 .filter-bar{background:var(--panel); border:1px solid var(--panel-brd); border-radius:18px; backdrop-filter:blur(16px); padding:12px 18px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:24px; min-width:0}
 .filter-bar-label{font-size:12px; color:var(--txt-dim); font-weight:700; text-transform:uppercase; letter-spacing:.05em; white-space:nowrap}
 .filter-bar select{background:var(--panel-hi); color:var(--txt); border:1px solid var(--panel-brd); border-radius:10px; padding:8px 12px; font-size:12.5px; cursor:pointer; transition:.2s; min-width:100px}
@@ -254,16 +254,28 @@ select.swap option{background:var(--bg2); color:var(--txt); padding:6px}
 
 .notification-settings{position:fixed; inset:0; background:rgba(4,5,8,0.55); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; z-index:50; padding:24px 16px; overflow-y:auto}
 .notification-settings.show{display:flex}
-.notification-settings-card{width:100%; max-width:500px; background:var(--panel); border:1px solid var(--panel-brd); border-radius:24px; backdrop-filter:blur(28px); padding:26px; box-shadow:0 30px 80px var(--shadow)}
+.notification-settings-card{width:100%; max-width:500px; background:linear-gradient(180deg, rgba(20,22,28,0.97), rgba(12,14,18,0.96)); border:1px solid rgba(160,174,192,0.18); border-radius:24px; backdrop-filter:blur(26px); padding:26px; box-shadow:0 30px 80px var(--shadow)}
 .notification-settings-card h2{margin:0 0 16px; font-size:18px; font-weight:750; color:var(--accent)}
 .notification-settings-card .close-settings{position:absolute; top:16px; right:16px; background:none; border:none; color:var(--txt-dim); cursor:pointer; font-size:18px}
-.settings-group{margin-bottom:18px; padding-bottom:18px; border-bottom:1px solid var(--panel-brd)}
+.settings-group{margin-bottom:18px; padding-bottom:18px; border-bottom:1px solid rgba(160,174,192,0.14)}
 .settings-group:last-child{margin-bottom:0; padding-bottom:0; border-bottom:none}
 .settings-group label{display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; font-weight:600; color:var(--txt)}
-.settings-checkbox{width:18px; height:18px; border:2px solid var(--panel-brd); border-radius:4px; background:var(--input-bg); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:.2s}
+.settings-checkbox{width:18px; height:18px; border:2px solid rgba(160,174,192,0.3); border-radius:4px; background:rgba(255,255,255,0.02); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:.2s}
 .settings-checkbox.checked{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
 .settings-group-title{font-size:12px; font-weight:700; color:var(--txt-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px}
-.meal-toggle{display:flex; align-items:center; gap:10px; margin-bottom:10px; padding:10px; background:var(--input-bg); border:1px solid var(--panel-brd); border-radius:10px}
+.speech-setting-label{display:block; font-size:11px; color:var(--txt-dim); margin-bottom:8px; font-weight:700; text-transform:uppercase; letter-spacing:.05em}
+.speech-row{display:flex; align-items:center; gap:10px; margin-bottom:8px}
+.speech-rate-input{width:100%; accent-color:var(--accent)}
+.speech-select-wrap{position:relative}
+.speech-select{width:100%; background:rgba(255,255,255,0.02); color:var(--txt); border:1px solid rgba(160,174,192,0.2); border-radius:12px; padding:10px 38px 10px 12px; font-size:12.5px; font-weight:600; appearance:none; -webkit-appearance:none; outline:none; box-shadow:inset 0 1px 0 rgba(255,255,255,0.04); cursor:pointer; min-height:44px}
+.speech-select option{background:var(--bg2); color:var(--txt); padding:10px;}
+.speech-select:focus{border-color:var(--accent); box-shadow:0 0 0 2px rgba(195,255,77,0.12)}
+.speech-select-wrap::after{content:'▾'; position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--txt-dim); pointer-events:none; font-size:12px}
+.speech-actions{display:flex; gap:8px; align-items:center}
+.speech-actions .btn-speak{flex:1}
+.btn-stop-speech{background:linear-gradient(180deg, #ff5a5a, #d92d2d); color:#fff; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:8px 14px; font-size:11px; cursor:pointer; transition:.2s; font-weight:700; box-shadow:0 10px 18px rgba(217, 45, 45, 0.18)}
+.btn-stop-speech:hover{opacity:0.96; transform:translateY(-1px)}
+.meal-toggle{display:flex; align-items:center; gap:10px; margin-bottom:10px; padding:10px; background:rgba(255,255,255,0.02); border:1px solid rgba(160,174,192,0.14); border-radius:10px}
 .meal-toggle input{width:16px; height:16px; cursor:pointer}
 .meal-toggle label{flex:1; cursor:pointer; margin:0; font-weight:500; font-size:12px}
 .settings-footer{display:flex; gap:10px; margin-top:18px; justify-content:flex-end}
@@ -517,6 +529,27 @@ select.swap option{background:var(--bg2); color:var(--txt); padding:6px}
         <div class="settings-checkbox" id="soundToggle" onclick="toggleNotificationSound()"></div>
         <span>Sound on notification</span>
       </label>
+    </div>
+
+    <div class="settings-group">
+      <div class="speech-setting-label">Speech settings</div>
+      <div class="speech-row"><span style="font-size:12px; color:var(--txt-dim); font-weight:600">Speaking rate</span></div>
+      <input id="speechRateControl" class="speech-rate-input" type="range" min="0.7" max="1.5" step="0.1" value="0.95" oninput="updateSpeechRateSetting(this.value)">
+      <div id="speechRateLabel" style="font-size:11px; color:var(--txt-dim); margin-top:5px">Rate: 0.95x</div>
+    </div>
+
+    <div class="settings-group">
+      <label for="speechVoiceSelect" class="speech-setting-label">Voice</label>
+      <div class="speech-select-wrap">
+        <select id="speechVoiceSelect" class="speech-select" onchange="updateSpeechVoiceSetting(this.value)">
+          <option value="voice-1">Voice 1</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="settings-group speech-actions">
+      <button class="btn-speak" onclick="speakUpcomingMeals()">🔊 Speak upcoming meals</button>
+      <button class="btn-stop-speech" onclick="stopSpeech()">⏹ Stop</button>
     </div>
 
     <div class="settings-footer">
@@ -992,8 +1025,19 @@ function saveSavings(list){ try{ localStorage.setItem(getStorageKey("finSavings"
 function loadStocks(){ try{ return JSON.parse(localStorage.getItem(getStorageKey("finStocks"))||"[]"); }catch(e){ return []; } }
 function saveStocks(list){ try{ localStorage.setItem(getStorageKey("finStocks"), JSON.stringify(list)); }catch(e){} }
 function fmt(n){ return "₹"+Math.round(n).toLocaleString("en-IN"); }
+function formatCompactCurrency(value){
+  const n=Number(value)||0;
+  const abs=Math.abs(n);
+  if(!Number.isFinite(n)) return "₹0";
+  if(abs<10000) return "₹"+((n/1000).toFixed(1)).replace(/\.0$/, "")+"K";
+  if(abs<1000000) return "₹"+((n/100000).toFixed(1)).replace(/\.0$/, "")+"L";
+  if(abs<10000000) return "₹"+((n/10000000).toFixed(1)).replace(/\.0$/, "")+"Cr";
+  if(abs<1000000000) return "₹"+((n/1000000).toFixed(1)).replace(/\.0$/, "")+"M";
+  if(abs<1000000000000) return "₹"+((n/1000000000).toFixed(1)).replace(/\.0$/, "")+"B";
+  return "₹"+((n/1000000000000).toFixed(1)).replace(/\.0$/, "")+"T";
+}
 const DONUT_COLORS=["#c3ff4d","#5fc9ff","#ff7a7a","#ffb864","#c88cff","#4ddbc0","#ffaa44","#88cc88","#ff99dd","#44ddff"];
-function createDonutChart(data, containerId, legendId){
+function createDonutChart(data, containerId, legendId, options={}){
   const total=Object.values(data).reduce((a,b)=>a+b,0);
   const entries=Object.entries(data).sort((a,b)=>b[1]-a[1]);
 
@@ -1030,7 +1074,7 @@ function createDonutChart(data, containerId, legendId){
   svg_el.innerHTML=svg;
   document.getElementById(containerId).insertBefore(svg_el.firstChild,document.getElementById(containerId).querySelector('.donut-center-text'));
 
-  const totalText=total===0?"₹0":total>=100000?`₹${(total/100000).toFixed(1)}L`:total>=1000?`₹${(total/1000).toFixed(0)}K`:`₹${total}`;
+  const totalText=total===0?"₹0":formatCompactCurrency(total);
   document.getElementById(containerId).querySelector('.donut-total').textContent=totalText;
 
   let legendHtml="";
@@ -1040,7 +1084,8 @@ function createDonutChart(data, containerId, legendId){
     entries.forEach((entry,idx)=>{
       const [label,value]=entry;
       const color=DONUT_COLORS[idx%DONUT_COLORS.length];
-      legendHtml+=`<div class="donut-legend-item"><div class="donut-legend-color" style="background:${color}"></div><div class="donut-legend-label">${label}</div><div class="donut-legend-amt">${fmt(value)}</div></div>`;
+      const displayValue=formatCompactCurrency(value);
+      legendHtml+=`<div class="donut-legend-item"><div class="donut-legend-color" style="background:${color}"></div><div class="donut-legend-label">${label}</div><div class="donut-legend-amt">${displayValue}</div></div>`;
     });
   }
   document.getElementById(legendId).innerHTML=legendHtml;
@@ -1543,7 +1588,7 @@ function renderFinance(){
 
   /* Create donut charts */
   createDonutChart(expByCat, "expenseChartContainer", "expenseLegend");
-  createDonutChart(gainByCat, "gainChartContainer", "gainLegend");
+  createDonutChart(gainByCat, "gainChartContainer", "gainLegend", { decimalPlaces: 1 });
 
   /* Income list */
   const sortedInc=[...income].sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -1935,8 +1980,10 @@ const MEAL_TIMES={
 let notificationPrefs={};
 let notificationState={lastNotified:{}};
 let notificationSoundEnabled=true;
+let speechSettings={rate:0.95, voiceKey:'voice-1', voiceName:'Voice 1'};
 
 function getNotificationStorageKey(key){ return currentUser?`${currentUser.userId}_notif_${key}`:key; }
+function getSpeechSettingsStorageKey(){ return currentUser?`${currentUser.userId}_speechPrefs`:"speechPrefs"; }
 
 function loadNotificationPrefs(){
   try{
@@ -1948,6 +1995,17 @@ function loadNotificationPrefs(){
   try{
     notificationSoundEnabled=JSON.parse(localStorage.getItem(getNotificationStorageKey("sound"))||"true");
   }catch(e){}
+
+  try{
+    const savedSpeech=JSON.parse(localStorage.getItem(getSpeechSettingsStorageKey())||"{}");
+    speechSettings={
+      rate: Number(savedSpeech.rate) || 0.95,
+      voiceKey: savedSpeech.voiceKey || 'voice-1',
+      voiceName: savedSpeech.voiceName || 'Voice 1'
+    };
+  }catch(e){
+    speechSettings={rate:0.95, voiceKey:'voice-1', voiceName:'Voice 1'};
+  }
 }
 
 function saveNotificationPrefs(){
@@ -1956,8 +2014,101 @@ function saveNotificationPrefs(){
   }catch(e){}
 }
 
+function saveSpeechSettings(){
+  try{
+    localStorage.setItem(getSpeechSettingsStorageKey(), JSON.stringify(speechSettings));
+  }catch(e){}
+}
+
+function getSpeechVoiceOptions(){
+  const voices='speechSynthesis' in window ? window.speechSynthesis.getVoices() : [];
+  const uniqueVoices=voices
+    .map((voice,index)=>({
+      key:`voice:${index}`,
+      actualName:voice.name || `Voice ${index+1}`
+    }))
+    .filter((voice, index, arr) => arr.findIndex(v => (v.actualName || '').toLowerCase() === (voice.actualName || '').toLowerCase()) === index)
+    .slice(0, 5);
+
+  if(!uniqueVoices.length){
+    return [
+      {key:'voice-1', label:'Voice 1', actualName:'Voice 1'},
+      {key:'voice-2', label:'Voice 2', actualName:'Voice 2'},
+      {key:'voice-3', label:'Voice 3', actualName:'Voice 3'},
+      {key:'voice-4', label:'Voice 4', actualName:'Voice 4'}
+    ];
+  }
+
+  return uniqueVoices.map((voice, index)=>({
+    key:`voice-${index+1}`,
+    label:`Voice ${index+1}`,
+    actualName: voice.actualName || `Voice ${index+1}`
+  }));
+}
+
+function populateSpeechVoiceSelector(){
+  const selector=document.getElementById('speechVoiceSelect');
+  if(!selector) return;
+  const voices=getSpeechVoiceOptions();
+  selector.innerHTML='';
+  voices.forEach((voice)=>{
+    const option=document.createElement('option');
+    option.value=voice.key;
+    option.textContent=voice.label;
+    selector.appendChild(option);
+  });
+
+  const selectedVoice = voices.find(v => v.key === speechSettings.voiceKey) || voices.find(v => v.actualName.toLowerCase() === String(speechSettings.voiceName).toLowerCase()) || voices[0];
+  if(selectedVoice){
+    selector.value = selectedVoice.key;
+    speechSettings.voiceKey = selectedVoice.key;
+    speechSettings.voiceName = selectedVoice.actualName || selectedVoice.label;
+  }
+  saveSpeechSettings();
+}
+
+function updateSpeechRateSetting(value){
+  speechSettings.rate=Number(value) || 0.95;
+  const rateLabel=document.getElementById('speechRateLabel');
+  if(rateLabel) rateLabel.textContent=`Rate: ${speechSettings.rate.toFixed(1)}x`;
+  saveSpeechSettings();
+}
+
+function updateSpeechVoiceSetting(value){
+  const voices=getSpeechVoiceOptions();
+  const picked=voices.find(v=>String(v.key)===String(value));
+  speechSettings.voiceKey = picked ? picked.key : 'voice-1';
+  speechSettings.voiceName = picked ? (picked.actualName || picked.label) : 'Voice 1';
+  saveSpeechSettings();
+}
+
 function openNotificationSettings(){
   loadNotificationPrefs();
+  const selector=document.getElementById('speechVoiceSelect');
+  if(selector && 'speechSynthesis' in window){
+    const voices=getSpeechVoiceOptions();
+    selector.innerHTML='';
+    voices.forEach((voice)=>{
+      const option=document.createElement('option');
+      option.value=voice.key;
+      option.textContent=voice.label;
+      selector.appendChild(option);
+    });
+    const selectedVoice = voices.find(v => v.key === speechSettings.voiceKey) || voices.find(v => v.actualName.toLowerCase() === String(speechSettings.voiceName).toLowerCase()) || voices[0];
+    if(selectedVoice){
+      selector.value = selectedVoice.key;
+      speechSettings.voiceKey = selectedVoice.key;
+      speechSettings.voiceName = selectedVoice.actualName || selectedVoice.label;
+    }
+  }
+
+  const rateInput=document.getElementById('speechRateControl');
+  if(rateInput){
+    rateInput.value=String(speechSettings.rate || 0.95);
+  }
+  const rateLabel=document.getElementById('speechRateLabel');
+  if(rateLabel) rateLabel.textContent=`Rate: ${(speechSettings.rate || 0.95).toFixed(1)}x`;
+
   document.getElementById("mainToggle").classList.toggle("checked", notificationPrefs.enabled);
   document.getElementById("soundToggle").classList.toggle("checked", notificationSoundEnabled);
   Object.keys(MEAL_TIMES).forEach(key=>{
@@ -2078,44 +2229,90 @@ function remindLater(key){
 }
 
 function playNotificationSound(){
-  const audioContext=new (window.AudioContext||window.webkitAudioContext)();
-  const now=audioContext.currentTime;
-  const osc=audioContext.createOscillator();
-  const gain=audioContext.createGain();
-  osc.connect(gain);
-  gain.connect(audioContext.destination);
-  osc.frequency.value=800;
-  osc.type="sine";
-  gain.gain.setValueAtTime(0.3, now);
-  gain.gain.exponentialRampToValueAtTime(0.01, now+0.3);
-  osc.start(now);
-  osc.stop(now+0.3);
+  try{
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if(!AudioContextCtor){
+      console.log('🔇 AudioContext unsupported in this browser');
+      return;
+    }
+
+    const audioContext = new AudioContextCtor();
+    if(audioContext.state === 'suspended'){
+      audioContext.resume();
+    }
+
+    const now = audioContext.currentTime;
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+    osc.frequency.value = 880;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+    osc.start(now);
+    osc.stop(now + 0.25);
+    console.log('🔊 Notification sound triggered');
+  }catch(e){
+    console.error('❌ Notification sound failed:', e);
+  }
 }
 
-function speakMealNotification(key, meal){
+function stopSpeech(){
+  if('speechSynthesis' in window){
+    window.speechSynthesis.cancel();
+  }
+}
+
+function speakWithUserSettings(message, label='speech'){
   if(!('speechSynthesis' in window)){
     alert('Text-to-Speech not supported on this device');
     return;
   }
 
-  const mealTime=MEAL_TIMES[key];
-  const userName=currentUser?.userId||"friend";
-  const itemsText=meal.items.slice(0,4).join(", ");
-  const message=`Hey ${userName}, it's time to prepare your meal. Today's ${mealTime.label.toLowerCase()} is ${meal.name}. You need ${itemsText}. Let's go!`;
-
   try{
     const utterance=new SpeechSynthesisUtterance(message);
-    utterance.rate=0.95;
-    utterance.pitch=1;
-    utterance.onstart=()=>console.log('🔊 Speaking notification');
-    utterance.onend=()=>console.log('✅ Notification spoken');
+    utterance.rate = Number(speechSettings.rate) || 0.95;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    const voices = window.speechSynthesis.getVoices();
+    const selectedOption = getSpeechVoiceOptions().find(v => v.key === speechSettings.voiceKey) || getSpeechVoiceOptions().find(v => v.actualName.toLowerCase() === String(speechSettings.voiceName).toLowerCase()) || getSpeechVoiceOptions()[0];
+    const selectedVoice = voices.find(v => v.name.toLowerCase() === String(selectedOption?.actualName || '').toLowerCase()) || voices.find(v => v.name.toLowerCase().includes('female')) || voices.find(v => v.name.toLowerCase().includes('male')) || voices[0];
+    if(selectedVoice) utterance.voice = selectedVoice;
+
+    utterance.onstart=()=>console.log('🔊 Speaking ' + label);
+    utterance.onend=()=>console.log('✅ ' + label + ' spoken');
     utterance.onerror=(e)=>console.error('❌ Speech error:', e);
+
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
   }catch(e){
     console.error('❌ Error in text-to-speech:', e);
     alert('Could not speak notification');
   }
+}
+
+function speakMealNotification(key, meal){
+  const mealTime=MEAL_TIMES[key];
+  const userName=currentUser?.userId||"friend";
+  const itemsText=meal.items.slice(0,4).join(", ");
+  const message=`Hey ${userName}, it's time to prepare your meal. Today's ${mealTime.label.toLowerCase()} is ${meal.name}. You need ${itemsText}. Let's go!`;
+  speakWithUserSettings(message, 'notification');
+}
+
+function speakUpcomingMeals(){
+  const userName=currentUser?.userId||"friend";
+  const meals=[];
+  Object.entries(MEAL_TIMES).forEach(([key, mealTime])=>{
+    const meal=getMealDetails(key);
+    if(!meal) return;
+    const itemsText=meal.items.slice(0,4).join(", ");
+    meals.push(`${mealTime.label} at ${mealTime.time} is ${meal.name}. Eat ${itemsText}.`);
+  });
+
+  const summary=meals.length ? `Hey ${userName}, here is your meal plan for today. ${meals.join(' ')}` : `Hey ${userName}, there is no meal plan available today.`;
+  speakWithUserSettings(summary, 'upcoming meals summary');
 }
 
 function checkMealReminders(){
@@ -2125,9 +2322,17 @@ function checkMealReminders(){
   const hours=String(now.getHours()).padStart(2,"0");
   const mins=String(now.getMinutes()).padStart(2,"0");
   const currentTime=`${hours}:${mins}`;
+  const currentMinutes=(now.getHours()*60)+now.getMinutes();
 
   Object.entries(MEAL_TIMES).forEach(([key,meal])=>{
-    if(currentTime===meal.remind) showMealNotification(key);
+    const [remindHour, remindMinute]=meal.remind.split(":").map(Number);
+    const remindMinutes=(remindHour*60)+remindMinute;
+    const diff=currentMinutes-remindMinutes;
+    const isDue=(diff>=0 && diff<1) && (!notificationState.lastNotified[key] || Date.now()-notificationState.lastNotified[key]>3600000);
+
+    console.log(`[Meal reminder] ${key}: now=${currentTime}, remind=${meal.remind}, diffMin=${diff}, due=${isDue}`);
+
+    if(isDue) showMealNotification(key);
   });
 }
 
