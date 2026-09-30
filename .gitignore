@@ -27,3 +27,9 @@ logs/
 # Dist
 dist/
 build/
+
+# Files & local scratch
+nutrifin_delpoy_ver1.html
+nutrifin_deploy_ver1.html
+.nutrifin_deploy_ver1.html
+scratch/

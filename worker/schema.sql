@@ -2,7 +2,8 @@ CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS user_data (
@@ -10,7 +11,10 @@ CREATE TABLE IF NOT EXISTS user_data (
   user_id TEXT NOT NULL,
   data_type TEXT NOT NULL,
   data TEXT NOT NULL,
-  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE(user_id, data_type)
 );
 
 CREATE TABLE IF NOT EXISTS exercise_history (
@@ -21,7 +25,8 @@ CREATE TABLE IF NOT EXISTS exercise_history (
   kcal REAL NOT NULL,
   p REAL NOT NULL,
   c REAL NOT NULL,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_data_user_type
@@ -29,3 +34,4 @@ ON user_data (user_id, data_type);
 
 CREATE INDEX IF NOT EXISTS idx_exercise_history_user_date
 ON exercise_history (user_id, date_key);
+

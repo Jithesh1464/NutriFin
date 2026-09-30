@@ -2,7 +2,9 @@ const CACHE_NAME = 'gains-ledger-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/Gains Ledger — Nutrition & Finance.html',
+  encodeURI('/Gains Ledger — Nutrition & Finance.html')
 ];
 
 // Install Service Worker
