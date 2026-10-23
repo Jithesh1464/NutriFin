@@ -6626,13 +6626,12 @@
       <div class="filter-bar">
         <span class="filter-bar-label">Period:</span>
         <select id="viewMode" onchange="updateDateFilters()">
+          <option value="month" selected>By Month</option>
           <option value="year">This Year</option>
-          <option value="month">By Month</option>
           <option value="all">All Time</option>
         </select>
-        <div id="monthYearSelectors" style="display:none; gap:8px; align-items:center">
+        <div id="monthYearSelectors" style="display:flex; gap:8px; align-items:center">
           <select id="monthSelect" onchange="filterByDate()">
-            <option value="-1">All Months</option>
             <option value="0">January</option>
             <option value="1">February</option>
             <option value="2">March</option>
@@ -6645,11 +6644,12 @@
             <option value="9">October</option>
             <option value="10">November</option>
             <option value="11">December</option>
+            <option value="-1">All Months</option>
           </select>
           <select id="yearSelect" onchange="filterByDate()"></select>
         </div>
         <div class="filter-bar-spacer"></div>
-        <div class="filter-bar-date" id="dateRangeLabel">2026 Full Year</div>
+        <div class="filter-bar-date" id="dateRangeLabel">Current Month</div>
       </div>
 
       <!-- QUICK-ADD TRANSACTION BAR -->
@@ -8365,11 +8365,17 @@
         saveStocks(stk);
       }
     }
+    function getLocalDateString(d = new Date()) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
     /* Income Functions */
     function addIncome() {
       window.currentIncomeId = null;
       document.getElementById("incomeModalTitle").textContent = "Add Income";
-      document.getElementById("incEditDate").value = new Date().toISOString().slice(0, 10);
+      document.getElementById("incEditDate").value = getLocalDateString();
       document.getElementById("incEditSource").value = "Salary";
       document.getElementById("incEditDesc").value = "";
       document.getElementById("incEditAmt").value = "";
@@ -8439,7 +8445,7 @@
     function addExpense() {
       window.currentExpenseId = null;
       document.getElementById("expenseModalTitle").textContent = "Add Expense";
-      document.getElementById("expEditDate").value = new Date().toISOString().slice(0, 10);
+      document.getElementById("expEditDate").value = getLocalDateString();
       document.getElementById("expEditCat").value = "Food";
       document.getElementById("expEditDesc").value = "";
       document.getElementById("expEditAmt").value = "";
@@ -8452,7 +8458,7 @@
       const cat = document.getElementById("expEditCat").value;
       const desc = document.getElementById("expEditDesc").value;
       const amt = parseFloat(document.getElementById("expEditAmt").value);
-      const date = document.getElementById("expEditDate").value || new Date().toISOString().slice(0, 10);
+      const date = document.getElementById("expEditDate").value || getLocalDateString();
       const method = document.getElementById("expEditMethod").value;
       const tags = window.expenseEditTags || [];
       if (!amt || amt <= 0 || !desc) return;
@@ -8570,7 +8576,7 @@
       document.getElementById("savingsModalTitle").textContent = "Add Investment";
       document.getElementById("savEditName").value = "";
       document.getElementById("savEditCat").value = "Fixed Deposit";
-      document.getElementById("savEditDate").value = new Date().toISOString().slice(0, 10);
+      document.getElementById("savEditDate").value = getLocalDateString();
       document.getElementById("savEditPrincipal").value = "";
       document.getElementById("savEditRate").value = "";
       document.getElementById("savEditType").value = "Compound";
@@ -8630,7 +8636,7 @@
       window.currentStockId = null;
       document.getElementById("stockModalTitle").textContent = "Add Stock";
       document.getElementById("stockEditTicker").value = "";
-      document.getElementById("stockEditDate").value = new Date().toISOString().slice(0, 10);
+      document.getElementById("stockEditDate").value = getLocalDateString();
       document.getElementById("stockEditShares").value = "";
       document.getElementById("stockEditAvgPrice").value = "";
       document.getElementById("stockEditCurrent").value = "";
@@ -8662,37 +8668,45 @@
     function initDateSelectors() {
       const now = new Date();
       const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
 
+      const viewMode = document.getElementById("viewMode");
       const monthSelect = document.getElementById("monthSelect");
       const yearSelect = document.getElementById("yearSelect");
+      const monthYearSelectors = document.getElementById("monthYearSelectors");
 
-      if (!monthSelect.value || monthSelect.value === "") {
-        monthSelect.value = String(now.getMonth());
+      if (viewMode && !viewMode.dataset.userChosen) {
+        viewMode.value = "month";
       }
 
-      if (!yearSelect.value || yearSelect.value === "") {
-        yearSelect.innerHTML = "";
-        for (let y = 2020; y <= currentYear; y++) {
-          const opt = document.createElement("option");
-          opt.value = y;
-          opt.textContent = y;
-          if (y === currentYear) opt.selected = true;
-          yearSelect.appendChild(opt);
-        }
-      } else {
-        if (yearSelect.innerHTML === "") {
+      if (monthSelect && !monthSelect.dataset.userChosen) {
+        monthSelect.value = String(currentMonth);
+      }
+
+      if (yearSelect) {
+        if (!yearSelect.options || yearSelect.options.length === 0) {
+          yearSelect.innerHTML = "";
           for (let y = 2020; y <= currentYear; y++) {
             const opt = document.createElement("option");
             opt.value = y;
             opt.textContent = y;
+            if (y === currentYear) opt.selected = true;
             yearSelect.appendChild(opt);
           }
         }
+        if (!yearSelect.dataset.userChosen) {
+          yearSelect.value = String(currentYear);
+        }
+      }
+
+      if (monthYearSelectors && viewMode) {
+        monthYearSelectors.style.display = (viewMode.value === "month") ? "flex" : "none";
       }
     }
 
     function getDateRange() {
-      const mode = document.getElementById("viewMode").value;
+      const vm = document.getElementById("viewMode");
+      const mode = (vm && vm.value) ? vm.value : "month";
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
@@ -8704,26 +8718,26 @@
         endDate = new Date(currentYear, 11, 31, 23, 59, 59);
         label = `${currentYear} Full Year`;
       } else if (mode === "month") {
-        const monthVal = document.getElementById("monthSelect").value;
-        const yearVal = document.getElementById("yearSelect").value;
+        const monthEl = document.getElementById("monthSelect");
+        const yearEl = document.getElementById("yearSelect");
+        const monthVal = (monthEl && monthEl.value !== "") ? monthEl.value : String(currentMonth);
+        const yearVal = (yearEl && yearEl.value !== "") ? yearEl.value : String(currentYear);
 
-        if (!monthVal || !yearVal) {
-          startDate = new Date(2020, 0, 1);
-          endDate = new Date();
-          label = "All Time";
+        const month = parseInt(monthVal);
+        const year = parseInt(yearVal);
+
+        if (isNaN(month) || isNaN(year)) {
+          startDate = new Date(currentYear, currentMonth, 1);
+          endDate = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59);
+          label = `${MONTHS[currentMonth]} ${currentYear}`;
+        } else if (month === -1) {
+          startDate = new Date(year, 0, 1);
+          endDate = new Date(year, 11, 31, 23, 59, 59);
+          label = `${year} Full Year`;
         } else {
-          const month = parseInt(monthVal);
-          const year = parseInt(yearVal);
-
-          if (month === -1) {
-            startDate = new Date(year, 0, 1);
-            endDate = new Date(year, 11, 31, 23, 59, 59);
-            label = `${year} Full Year`;
-          } else {
-            startDate = new Date(year, month, 1);
-            endDate = new Date(year, month + 1, 0, 23, 59, 59);
-            label = `${MONTHS[month]} ${year}`;
-          }
+          startDate = new Date(year, month, 1);
+          endDate = new Date(year, month + 1, 0, 23, 59, 59);
+          label = `${MONTHS[month]} ${year}`;
         }
       } else {
         startDate = new Date(2020, 0, 1);
@@ -8731,7 +8745,10 @@
         label = "All Time";
       }
 
-      document.getElementById("dateRangeLabel").textContent = label;
+      const dateRangeLabel = document.getElementById("dateRangeLabel");
+      if (dateRangeLabel) {
+        dateRangeLabel.textContent = label;
+      }
       return { startDate, endDate };
     }
 
@@ -8754,20 +8771,33 @@
     }
 
     function updateDateFilters() {
-      const mode = document.getElementById("viewMode").value;
+      const vm = document.getElementById("viewMode");
+      if (vm) vm.dataset.userChosen = "true";
+      const mode = vm ? vm.value : "month";
+      const selectors = document.getElementById("monthYearSelectors");
       if (mode === "month") {
-        document.getElementById("monthYearSelectors").style.display = "flex";
-        if (!document.getElementById("monthSelect").value) {
-          document.getElementById("monthSelect").value = new Date().getMonth();
+        if (selectors) selectors.style.display = "flex";
+        const ms = document.getElementById("monthSelect");
+        const ys = document.getElementById("yearSelect");
+        if (ms && (ms.value === "" || ms.value === undefined)) {
+          ms.value = String(new Date().getMonth());
         }
-        if (!document.getElementById("yearSelect").value) {
-          document.getElementById("yearSelect").value = new Date().getFullYear();
+        if (ys && (ys.value === "" || ys.value === undefined)) {
+          ys.value = String(new Date().getFullYear());
         }
       } else {
-        document.getElementById("monthYearSelectors").style.display = "none";
+        if (selectors) selectors.style.display = "none";
       }
       getDateRange();
       filterByDate();
+    }
+
+    function filterByDate() {
+      const ms = document.getElementById("monthSelect");
+      const ys = document.getElementById("yearSelect");
+      if (ms) ms.dataset.userChosen = "true";
+      if (ys) ys.dataset.userChosen = "true";
+      renderFinance();
     }
 
     function getFilteredIncome() {
@@ -8884,7 +8914,6 @@
     </div>`).join("");
     }
 
-    function filterByDate() { renderFinance(); }
     function renderFinance() {
       seedDataIfEmpty();
       initDateSelectors();
@@ -8988,7 +9017,7 @@
         return;
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
 
       if (type === 'expense') {
         const expenses = loadExpenses();
