@@ -6061,7 +6061,7 @@
             <label>Password</label>
             <input type="password" id="loginPassword" placeholder="Enter your password">
             <button type="button" class="password-toggle-btn"
-              onclick="togglePasswordVisibility('loginPassword')">👁️</button> //NEED TO REVIEW
+              onclick="togglePasswordVisibility('loginPassword')">👁️</button>
           </div>
           <button class="auth-button" onclick="handleLogin()">Login</button>
           <div class="auth-toggle">
@@ -6168,6 +6168,13 @@
                 </path>
               </svg>
               <span>Financial Summary</span>
+            </button>
+            <button onclick="syncAllLocalDataToCloudflare(true); toggleProfileMenu(); return false;"
+              class="profile-action-btn">
+              <svg class="profile-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
+              </svg>
+              <span>Sync to Cloud DB</span>
             </button>
           </div>
           <div class="profile-divider"></div>
@@ -6408,6 +6415,21 @@
           </div>
 
           <div class="settings-group">
+            <div class="settings-group-title">Cloud Database Sync</div>
+            <div
+              style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:14px; padding:14px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap">
+              <div>
+                <div style="font-size:13px; font-weight:700; color:var(--txt)">Cloudflare D1 SQLite</div>
+                <div style="font-size:11px; color:var(--txt-dim); margin-top:2px" id="syncStatusSummary">Sync your
+                  transactions, recurring rules & goals across all your devices.</div>
+              </div>
+              <button class="btn-save-settings" id="manualSyncBtn" type="button"
+                onclick="syncAllLocalDataToCloudflare(true)"
+                style="padding:8px 14px; font-size:12px; white-space:nowrap">☁️ Sync with DB</button>
+            </div>
+          </div>
+
+          <div class="settings-group">
             <div class="settings-group-title">Advanced Analytics</div>
             <div class="pricing-card">
               <div>
@@ -6588,7 +6610,18 @@
     <!-- ============ FINANCE TAB ============ -->
     <div class="tab-section" id="tab-fin">
       <div class="eyebrow" style="margin-top:6px">Expenses <span>·</span> Gains <span>·</span> Net Worth</div>
-      <h1 class="headline" style="font-size:34px;margin-bottom:18px">Track the <em>other</em> kind of gains.</h1>
+      <div
+        style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:18px">
+        <h1 class="headline" style="font-size:34px; margin:0">Track the <em>other</em> kind of gains.</h1>
+        <button id="finCloudSyncBtn" class="setting-toggle-btn" type="button"
+          onclick="syncAllLocalDataToCloudflare(true)"
+          style="display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:7px 14px; background:rgba(195,255,77,0.12); border-color:rgba(195,255,77,0.3); color:var(--accent); cursor:pointer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
+          </svg>
+          <span id="finSyncBtnText">Sync with DB</span>
+        </button>
+      </div>
 
       <div class="filter-bar">
         <span class="filter-bar-label">Period:</span>
@@ -8996,8 +9029,17 @@
 
     function loadBudgets() {
       try {
-        const raw = localStorage.getItem(getStorageKeyForBudgets());
-        return raw ? JSON.parse(raw) : getDefaultBudgets();
+        const key = getStorageKeyForBudgets();
+        const raw = localStorage.getItem(key);
+        if (raw) return JSON.parse(raw);
+        if (currentUser && currentUser.userId) {
+          const fallback = localStorage.getItem('finBudgets');
+          if (fallback) {
+            localStorage.setItem(key, fallback);
+            return JSON.parse(fallback);
+          }
+        }
+        return getDefaultBudgets();
       } catch (e) {
         return getDefaultBudgets();
       }
@@ -9302,8 +9344,17 @@
     /* ================= RECURRING TRANSACTIONS ENGINE ================= */
     function loadRecurring() {
       try {
-        const raw = localStorage.getItem(getStorageKeyForBudgets().replace('finBudgets', 'recurring'));
-        return raw ? JSON.parse(raw) : [];
+        const key = getStorageKeyForBudgets().replace('finBudgets', 'recurring');
+        const raw = localStorage.getItem(key);
+        if (raw) return JSON.parse(raw);
+        if (currentUser && currentUser.userId) {
+          const fallback = localStorage.getItem('recurring');
+          if (fallback) {
+            localStorage.setItem(key, fallback);
+            return JSON.parse(fallback);
+          }
+        }
+        return [];
       } catch (e) {
         return [];
       }
@@ -9502,8 +9553,17 @@
     /* ================= SAVINGS GOALS ================= */
     function loadGoals() {
       try {
-        const raw = localStorage.getItem(getStorageKeyForBudgets().replace('finBudgets', 'goals'));
-        return raw ? JSON.parse(raw) : [];
+        const key = getStorageKeyForBudgets().replace('finBudgets', 'goals');
+        const raw = localStorage.getItem(key);
+        if (raw) return JSON.parse(raw);
+        if (currentUser && currentUser.userId) {
+          const fallback = localStorage.getItem('goals');
+          if (fallback) {
+            localStorage.setItem(key, fallback);
+            return JSON.parse(fallback);
+          }
+        }
+        return [];
       } catch (e) {
         return [];
       }
@@ -9520,8 +9580,17 @@
 
     function loadGoalContributions() {
       try {
-        const raw = localStorage.getItem(getStorageKeyForBudgets().replace('finBudgets', 'goalContributions'));
-        return raw ? JSON.parse(raw) : {};
+        const key = getStorageKeyForBudgets().replace('finBudgets', 'goalContributions');
+        const raw = localStorage.getItem(key);
+        if (raw) return JSON.parse(raw);
+        if (currentUser && currentUser.userId) {
+          const fallback = localStorage.getItem('goalContributions');
+          if (fallback) {
+            localStorage.setItem(key, fallback);
+            return JSON.parse(fallback);
+          }
+        }
+        return {};
       } catch (e) {
         return {};
       }
@@ -10401,7 +10470,7 @@
     // API_URL, currentUser, authToken are hoisted to the top of <script>
 
     // Check if user is already logged in
-    function checkAuthStatus() {
+    async function checkAuthStatus() {
       const savedToken = localStorage.getItem('authToken');
       const savedUser = localStorage.getItem('currentUser');
       if (savedToken && savedUser) {
@@ -10415,9 +10484,28 @@
         currentUser.avatar = currentUser.avatar || (currentUser.name || 'J').charAt(0).toUpperCase();
         hideAuthScreen();
         updateProfileDisplay();
-        loadUserDataFromCloudflare();
-        fetchUserProfileFromBackend();
+
+        // Immediately render cached local data
         renderFinance();
+        syncRecurringTransactions();
+
+        if (authToken && authToken !== 'offline-token') {
+          try {
+            await loadUserDataFromCloudflare();
+            await fetchUserProfileFromBackend();
+            renderFinance();
+            syncRecurringTransactions();
+            renderBudgets();
+            renderGoals();
+            renderRecurring();
+          } catch (e) {
+            console.warn('Initial cloud load warning:', e);
+          }
+
+          // Back up local data to Cloudflare D1 if local items exist
+          syncAllLocalDataToCloudflare();
+        }
+
         // Flush any offline-queued sync tasks now that we have a token
         if (authToken && authToken !== 'offline-token' && syncQueue.length > 0) {
           processSyncQueue();
@@ -10439,29 +10527,159 @@
         goalContributions: 'finBudgets_goalContributions'
       };
 
-      for (const [dataType, localKey] of Object.entries(typeMap)) {
-        try {
-          const response = await fetch(`${API_URL}/sync/${dataType}`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${authToken}`
-            }
-          });
+      let fetchedAny = false;
 
-          if (!response.ok) continue;
-
-          const result = await response.json();
-          if (result && result.data !== null && result.data !== undefined) {
-            const storageKey = localKey.startsWith('finBudgets_')
-              ? getStorageKeyForBudgets().replace('finBudgets', localKey.replace('finBudgets_', ''))
-              : localKey === 'finBudgets'
-                ? getStorageKeyForBudgets()
-                : getStorageKey(localKey);
-            localStorage.setItem(storageKey, JSON.stringify(result.data));
+      // 1. First attempt fast single-request bulk download from /api/data
+      try {
+        const response = await fetch(`${API_URL}/api/data`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
           }
-        } catch (err) {
-          console.log(`Failed to load ${dataType} from Cloudflare`, err);
+        });
+
+        if (response.ok) {
+          const res = await response.json();
+          if (res && res.data && typeof res.data === 'object') {
+            for (const [dataType, localKey] of Object.entries(typeMap)) {
+              const remoteVal = res.data[dataType];
+              if (remoteVal !== undefined && remoteVal !== null) {
+                const storageKey = localKey.startsWith('finBudgets_')
+                  ? getStorageKeyForBudgets().replace('finBudgets', localKey.replace('finBudgets_', ''))
+                  : localKey === 'finBudgets'
+                    ? getStorageKeyForBudgets()
+                    : getStorageKey(localKey);
+
+                const currentLocal = localStorage.getItem(storageKey);
+                const currentParsed = currentLocal ? JSON.parse(currentLocal) : null;
+                const localHasData = Array.isArray(currentParsed) ? currentParsed.length > 0 : (currentParsed && Object.keys(currentParsed).length > 0);
+                const remoteHasData = Array.isArray(remoteVal) ? remoteVal.length > 0 : (remoteVal && Object.keys(remoteVal).length > 0);
+
+                // Protect local data: only overwrite if remote has data or local is currently empty
+                if (remoteHasData || !localHasData) {
+                  localStorage.setItem(storageKey, JSON.stringify(remoteVal));
+                  fetchedAny = true;
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Fast bulk fetch skipped, using individual sync endpoints', e);
+      }
+
+      // 2. Fallback to individual endpoints if bulk returned no data
+      if (!fetchedAny) {
+        for (const [dataType, localKey] of Object.entries(typeMap)) {
+          try {
+            const response = await fetch(`${API_URL}/sync/${dataType}`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+              }
+            });
+
+            if (!response.ok) continue;
+
+            const result = await response.json();
+            if (result && result.data !== null && result.data !== undefined) {
+              const storageKey = localKey.startsWith('finBudgets_')
+                ? getStorageKeyForBudgets().replace('finBudgets', localKey.replace('finBudgets_', ''))
+                : localKey === 'finBudgets'
+                  ? getStorageKeyForBudgets()
+                  : getStorageKey(localKey);
+
+              const currentLocal = localStorage.getItem(storageKey);
+              const currentParsed = currentLocal ? JSON.parse(currentLocal) : null;
+              const localHasData = Array.isArray(currentParsed) ? currentParsed.length > 0 : (currentParsed && Object.keys(currentParsed).length > 0);
+              const remoteHasData = Array.isArray(result.data) ? result.data.length > 0 : (result.data && Object.keys(result.data).length > 0);
+
+              if (remoteHasData || !localHasData) {
+                localStorage.setItem(storageKey, JSON.stringify(result.data));
+                fetchedAny = true;
+              }
+            }
+          } catch (err) {
+            console.log(`Failed to load ${dataType} from Cloudflare`, err);
+          }
+        }
+      }
+
+      // 3. Immediately re-render all views if any data was downloaded
+      if (fetchedAny) {
+        try {
+          renderFinance();
+          syncRecurringTransactions();
+          renderBudgets();
+          renderGoals();
+          renderRecurring();
+        } catch (e) {
+          console.warn('Re-render after cloud load warning:', e);
+        }
+      }
+    }
+
+    /* ================= SYNC ALL LOCAL DATA TO CLOUD ================= */
+    async function syncAllLocalDataToCloudflare(showToast = false) {
+      if (!currentUser || !authToken || authToken === 'offline-token') {
+        if (showToast) showNotification('Please login to sync with Cloud DB', 'error');
+        return;
+      }
+
+      const syncBtn = document.getElementById('manualSyncBtn');
+      const finSyncBtnText = document.getElementById('finSyncBtnText');
+      if (syncBtn) { syncBtn.disabled = true; syncBtn.innerHTML = '🔄 Syncing...'; }
+      if (finSyncBtnText) finSyncBtnText.textContent = 'Syncing...';
+
+      const syncStatusEl = document.getElementById('syncStatusSummary');
+      if (syncStatusEl) {
+        syncStatusEl.textContent = 'Uploading transactions & recurring rules to Cloudflare D1...';
+      }
+
+      const itemsToSync = [
+        { type: 'expenses', data: loadExpenses() },
+        { type: 'income', data: loadIncome() },
+        { type: 'savings', data: loadSavings() },
+        { type: 'stocks', data: loadStocks() },
+        { type: 'budgets', data: loadBudgets() },
+        { type: 'recurring', data: loadRecurring() },
+        { type: 'goals', data: loadGoals() },
+        { type: 'goalContributions', data: loadGoalContributions() }
+      ];
+
+      let anySuccess = false;
+      let failureCount = 0;
+
+      for (const item of itemsToSync) {
+        const hasData = Array.isArray(item.data) ? item.data.length > 0 : (item.data && Object.keys(item.data).length > 0);
+        if (hasData) {
+          const ok = await syncToCloudflare(item.type, item.data);
+          if (ok) anySuccess = true;
+          else failureCount++;
+        }
+      }
+
+      if (syncBtn) { syncBtn.disabled = false; syncBtn.innerHTML = '☁️ Sync with DB'; }
+      if (finSyncBtnText) finSyncBtnText.textContent = 'Sync with DB';
+
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (syncStatusEl) {
+        if (failureCount === 0) {
+          syncStatusEl.innerHTML = `✅ Last synced at <strong style="color:var(--accent)">${nowStr}</strong> with Cloudflare D1`;
+        } else {
+          syncStatusEl.innerHTML = `⚠️ Sync completed with ${failureCount} pending item(s). Will retry.`;
+        }
+      }
+
+      if (showToast) {
+        if (failureCount === 0) {
+          showNotification('All data successfully synced to Cloudflare D1! ☁️', 'success');
+        } else if (anySuccess) {
+          showNotification('Partially synced to DB. Retrying pending items.', 'warning');
+        } else {
+          showNotification('Could not reach cloud DB. Check internet connection.', 'error');
         }
       }
     }
@@ -10519,6 +10737,13 @@
           updateProfileDisplay();
           await loadUserDataFromCloudflare();
           await fetchUserProfileFromBackend();
+          renderFinance();
+          syncRecurringTransactions();
+          renderBudgets();
+          renderGoals();
+          renderRecurring();
+          // Sync any local data to Cloudflare D1
+          syncAllLocalDataToCloudflare();
           statusDiv.innerHTML = '<span style="color:var(--accent)">✅ Login successful!</span>';
           setTimeout(() => hideAuthScreen(), 500);
         } else {
@@ -10582,6 +10807,9 @@
           localStorage.setItem('authToken', authToken);
           localStorage.setItem('currentUser', JSON.stringify(currentUser));
           updateProfileDisplay();
+          renderFinance();
+          syncRecurringTransactions();
+          syncAllLocalDataToCloudflare();
           statusDiv.innerHTML = '<span style="color:var(--accent)">✅ Account created! Logging in...</span>';
           setTimeout(() => hideAuthScreen(), 500);
         } else {
@@ -10598,6 +10826,8 @@
       updateProfileMenu();
       loadUserSettings();
       renderWorkoutLibrary();
+      renderFinance();
+      syncRecurringTransactions();
     }
 
     // Update profile menu with current user
@@ -10671,9 +10901,10 @@
 
     // Flush offline sync queue when internet returns
     window.addEventListener('online', () => {
-      console.log('🌐 Back online — flushing sync queue...');
-      if (authToken && authToken !== 'offline-token' && syncQueue.length > 0) {
-        processSyncQueue();
+      console.log('🌐 Back online — flushing sync queue and syncing with Cloudflare D1...');
+      if (authToken && authToken !== 'offline-token') {
+        if (syncQueue.length > 0) processSyncQueue();
+        syncAllLocalDataToCloudflare();
       }
     });
 

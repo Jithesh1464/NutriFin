@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gains-ledger-v1';
+const CACHE_NAME = 'gains-ledger-v2';
 const urlsToCache = [
   '/',
   '/index.html',

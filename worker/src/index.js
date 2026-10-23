@@ -11,6 +11,69 @@ const DEMO_USER = { userId: 'demo1', password: '12345678' };
 
 const getDb = (env) => env.DB || env.gains_ledger_db;
 
+/* ================= DATABASE AUTO-MIGRATION & SCHEMA ================= */
+let schemaEnsured = false;
+
+async function ensureSchema(db) {
+  if (schemaEnsured || !db) return;
+
+  try {
+    // 1. Ensure core tables exist
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS user_data (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        data_type TEXT NOT NULL,
+        data TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS exercise_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        date_key TEXT NOT NULL,
+        idx INTEGER NOT NULL,
+        kcal REAL NOT NULL,
+        p REAL NOT NULL,
+        c REAL NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_user_data_user_type ON user_data (user_id, data_type);
+      CREATE INDEX IF NOT EXISTS idx_exercise_history_user_date ON exercise_history (user_id, date_key);
+    `);
+  } catch (e) {
+    console.warn('ensureSchema base create warning:', e.message);
+  }
+
+  // 2. Safe migrations for existing SQLite databases created with older schema
+  try {
+    await db.exec('ALTER TABLE users ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP;');
+  } catch (e) {
+    // Column already exists or error ignored
+  }
+
+  try {
+    await db.exec('ALTER TABLE user_data ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP;');
+  } catch (e) {
+    // Column already exists or error ignored
+  }
+
+  try {
+    await db.exec('ALTER TABLE user_data ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP;');
+  } catch (e) {
+    // Column already exists or error ignored
+  }
+
+  schemaEnsured = true;
+}
+
 /* ================= MAIN ROUTER ================= */
 
 export default {
@@ -27,12 +90,13 @@ export default {
     if (path === '/' || path === '') {
       return json({
         status: 'ok',
-        message: 'Gains Ledger API v1.1 (Production)',
+        message: 'Gains Ledger API v1.2 (Production)',
         routes: {
           auth: ['/api/auth/login', '/api/auth/register'],
           user: ['/api/user/profile (GET, PUT)', '/api/user/email (PUT)', '/api/user/report-delivery (POST)'],
           sync: ['/sync (POST)', '/sync/:type (GET)', '/sync/:type (DELETE)'],
           data: ['/api/data (GET)'],
+          exercise: ['/api/exercise-history (GET, POST)']
         },
       });
     }
@@ -77,9 +141,17 @@ export default {
       return handleDeleteData(request, env);
     }
 
-    // Data routes
+    // Data routes (Fetch all data in one request)
     if (path === '/api/data' && request.method === 'GET') {
       return handleFetchAllData(request, env);
+    }
+
+    // Exercise History routes
+    if ((path === '/api/exercise-history' || path === '/exercise-history') && request.method === 'POST') {
+      return handleExerciseSave(request, env);
+    }
+    if ((path === '/api/exercise-history' || path === '/exercise-history') && request.method === 'GET') {
+      return handleExerciseFetch(request, env);
     }
 
     // Legacy compat routes
@@ -100,6 +172,7 @@ export default {
 async function handleRegister(request, env) {
   const db = getDb(env);
   if (!db) return json({ error: 'Database not configured' }, 500);
+  await ensureSchema(db);
 
   try {
     const body = await request.json();
@@ -123,10 +196,17 @@ async function handleRegister(request, env) {
     }
 
     const hash = await hashPassword(password);
-    await db
-      .prepare('INSERT INTO users (id, email, password, created_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)')
-      .bind(userId, email, hash)
-      .run();
+    try {
+      await db
+        .prepare('INSERT INTO users (id, email, password, created_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)')
+        .bind(userId, email, hash)
+        .run();
+    } catch (e) {
+      await db
+        .prepare('INSERT INTO users (id, email, password, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)')
+        .bind(userId, email, hash)
+        .run();
+    }
 
     const token = makeToken(userId);
     return json({ success: true, message: 'Registered', token, userId, email }, 201);
@@ -139,6 +219,7 @@ async function handleRegister(request, env) {
 async function handleLogin(request, env) {
   const db = getDb(env);
   if (!db) return json({ error: 'Database not configured' }, 500);
+  await ensureSchema(db);
 
   try {
     const body = await request.json();
@@ -202,6 +283,7 @@ async function handleLogin(request, env) {
 async function handleGetProfile(request, env) {
   const db = getDb(env);
   if (!db) return json({ error: 'Database not configured' }, 500);
+  await ensureSchema(db);
 
   const userId = getUserIdFromAuth(request);
   if (!userId) return json({ error: 'Unauthorized' }, 401);
@@ -236,6 +318,7 @@ async function handleGetProfile(request, env) {
 async function handleUpdateProfile(request, env) {
   const db = getDb(env);
   if (!db) return json({ error: 'Database not configured' }, 500);
+  await ensureSchema(db);
 
   const userId = getUserIdFromAuth(request);
   if (!userId) return json({ error: 'Unauthorized' }, 401);
@@ -261,15 +344,36 @@ async function handleUpdateProfile(request, env) {
     const dataStr = JSON.stringify(updatedProfile);
 
     if (profileRow) {
-      await db
-        .prepare('UPDATE user_data SET data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND data_type = "profile"')
-        .bind(dataStr, userId)
-        .run();
+      try {
+        await db
+          .prepare('UPDATE user_data SET data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND data_type = "profile"')
+          .bind(dataStr, userId)
+          .run();
+      } catch (err) {
+        await db
+          .prepare('UPDATE user_data SET data = ? WHERE user_id = ? AND data_type = "profile"')
+          .bind(dataStr, userId)
+          .run();
+      }
     } else {
-      await db
-        .prepare('INSERT INTO user_data (user_id, data_type, data, created_at, updated_at) VALUES (?, "profile", ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)')
-        .bind(userId, dataStr)
-        .run();
+      try {
+        await db
+          .prepare('INSERT INTO user_data (user_id, data_type, data, created_at, updated_at) VALUES (?, "profile", ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)')
+          .bind(userId, dataStr)
+          .run();
+      } catch (insertErr) {
+        try {
+          await db
+            .prepare('INSERT INTO user_data (user_id, data_type, data, updated_at) VALUES (?, "profile", ?, CURRENT_TIMESTAMP)')
+            .bind(userId, dataStr)
+            .run();
+        } catch (insertErr2) {
+          await db
+            .prepare('INSERT INTO user_data (user_id, data_type, data) VALUES (?, "profile", ?)')
+            .bind(userId, dataStr)
+            .run();
+        }
+      }
     }
 
     return json({
@@ -287,6 +391,7 @@ async function handleUpdateProfile(request, env) {
 async function handleChangeEmail(request, env) {
   const db = getDb(env);
   if (!db) return json({ error: 'Database not configured' }, 500);
+  await ensureSchema(db);
 
   const userId = getUserIdFromAuth(request);
   if (!userId) return json({ error: 'Unauthorized' }, 401);
@@ -310,10 +415,17 @@ async function handleChangeEmail(request, env) {
     }
 
     // Update in users table
-    await db
-      .prepare('UPDATE users SET email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
-      .bind(newEmail, userId)
-      .run();
+    try {
+      await db
+        .prepare('UPDATE users SET email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+        .bind(newEmail, userId)
+        .run();
+    } catch (e) {
+      await db
+        .prepare('UPDATE users SET email = ? WHERE id = ?')
+        .bind(newEmail, userId)
+        .run();
+    }
 
     return json({
       success: true,
@@ -331,6 +443,7 @@ async function handleChangeEmail(request, env) {
 async function handleReportDelivery(request, env) {
   const db = getDb(env);
   if (!db) return json({ error: 'Database not configured' }, 500);
+  await ensureSchema(db);
 
   const userId = getUserIdFromAuth(request);
   if (!userId) return json({ error: 'Unauthorized' }, 401);
@@ -360,15 +473,36 @@ async function handleReportDelivery(request, env) {
     const dataStr = JSON.stringify(settings);
 
     if (settingsRow) {
-      await db
-        .prepare('UPDATE user_data SET data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND data_type = "settings"')
-        .bind(dataStr, userId)
-        .run();
+      try {
+        await db
+          .prepare('UPDATE user_data SET data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND data_type = "settings"')
+          .bind(dataStr, userId)
+          .run();
+      } catch (err) {
+        await db
+          .prepare('UPDATE user_data SET data = ? WHERE user_id = ? AND data_type = "settings"')
+          .bind(dataStr, userId)
+          .run();
+      }
     } else {
-      await db
-        .prepare('INSERT INTO user_data (user_id, data_type, data, created_at, updated_at) VALUES (?, "settings", ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)')
-        .bind(userId, dataStr)
-        .run();
+      try {
+        await db
+          .prepare('INSERT INTO user_data (user_id, data_type, data, created_at, updated_at) VALUES (?, "settings", ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)')
+          .bind(userId, dataStr)
+          .run();
+      } catch (insertErr) {
+        try {
+          await db
+            .prepare('INSERT INTO user_data (user_id, data_type, data, updated_at) VALUES (?, "settings", ?, CURRENT_TIMESTAMP)')
+            .bind(userId, dataStr)
+            .run();
+        } catch (insertErr2) {
+          await db
+            .prepare('INSERT INTO user_data (user_id, data_type, data) VALUES (?, "settings", ?)')
+            .bind(userId, dataStr)
+            .run();
+        }
+      }
     }
 
     return json({
@@ -387,6 +521,7 @@ async function handleReportDelivery(request, env) {
 async function handleSync(request, env) {
   const db = getDb(env);
   if (!db) return json({ error: 'Database not configured' }, 500);
+  await ensureSchema(db);
 
   const userId = getUserIdFromAuth(request);
   if (!userId) return json({ error: 'Unauthorized' }, 401);
@@ -395,7 +530,7 @@ async function handleSync(request, env) {
     const body = await request.json();
     const { dataType, data } = body;
 
-    if (!dataType || !data) {
+    if (!dataType || data === undefined || data === null) {
       return json({ error: 'dataType and data required' }, 400);
     }
 
@@ -412,15 +547,36 @@ async function handleSync(request, env) {
       .first();
 
     if (existing) {
-      await db
-        .prepare('UPDATE user_data SET data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND data_type = ?')
-        .bind(dataStr, userId, dataType)
-        .run();
+      try {
+        await db
+          .prepare('UPDATE user_data SET data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND data_type = ?')
+          .bind(dataStr, userId, dataType)
+          .run();
+      } catch (err) {
+        await db
+          .prepare('UPDATE user_data SET data = ? WHERE user_id = ? AND data_type = ?')
+          .bind(dataStr, userId, dataType)
+          .run();
+      }
     } else {
-      await db
-        .prepare('INSERT INTO user_data (user_id, data_type, data, created_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)')
-        .bind(userId, dataType, dataStr)
-        .run();
+      try {
+        await db
+          .prepare('INSERT INTO user_data (user_id, data_type, data, created_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)')
+          .bind(userId, dataType, dataStr)
+          .run();
+      } catch (insertErr) {
+        try {
+          await db
+            .prepare('INSERT INTO user_data (user_id, data_type, data, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)')
+            .bind(userId, dataType, dataStr)
+            .run();
+        } catch (insertErr2) {
+          await db
+            .prepare('INSERT INTO user_data (user_id, data_type, data) VALUES (?, ?, ?)')
+            .bind(userId, dataType, dataStr)
+            .run();
+        }
+      }
     }
 
     return json({ success: true, message: 'Data synced', dataType }, 200);
@@ -433,6 +589,7 @@ async function handleSync(request, env) {
 async function handleFetchData(request, env) {
   const db = getDb(env);
   if (!db) return json({ error: 'Database not configured' }, 500);
+  await ensureSchema(db);
 
   const userId = getUserIdFromAuth(request);
   if (!userId) return json({ error: 'Unauthorized' }, 401);
@@ -454,7 +611,13 @@ async function handleFetchData(request, env) {
       return json({ data: null, message: 'No data found' }, 200);
     }
 
-    const data = JSON.parse(row.data);
+    let data = null;
+    try {
+      data = JSON.parse(row.data);
+    } catch(err) {
+      data = row.data;
+    }
+
     return json({ success: true, data, dataType }, 200);
   } catch (e) {
     console.error('Fetch error:', e);
@@ -465,6 +628,7 @@ async function handleFetchData(request, env) {
 async function handleFetchAllData(request, env) {
   const db = getDb(env);
   if (!db) return json({ error: 'Database not configured' }, 500);
+  await ensureSchema(db);
 
   const userId = getUserIdFromAuth(request);
   if (!userId) return json({ error: 'Unauthorized' }, 401);
@@ -477,7 +641,11 @@ async function handleFetchAllData(request, env) {
 
     const allData = {};
     rows.results?.forEach((row) => {
-      allData[row.data_type] = JSON.parse(row.data);
+      try {
+        allData[row.data_type] = JSON.parse(row.data);
+      } catch (e) {
+        allData[row.data_type] = row.data;
+      }
     });
 
     return json({ success: true, data: allData }, 200);
@@ -490,6 +658,7 @@ async function handleFetchAllData(request, env) {
 async function handleDeleteData(request, env) {
   const db = getDb(env);
   if (!db) return json({ error: 'Database not configured' }, 500);
+  await ensureSchema(db);
 
   const userId = getUserIdFromAuth(request);
   if (!userId) return json({ error: 'Unauthorized' }, 401);
@@ -511,18 +680,76 @@ async function handleDeleteData(request, env) {
   }
 }
 
+async function handleExerciseSave(request, env) {
+  const db = getDb(env);
+  if (!db) return json({ error: 'Database not configured' }, 500);
+  await ensureSchema(db);
+
+  const userId = getUserIdFromAuth(request);
+  if (!userId) return json({ error: 'Unauthorized' }, 401);
+
+  try {
+    const body = await request.json().catch(() => ({}));
+    const { dateKey, idx, kcal, p, c } = body;
+
+    if (!dateKey || idx === undefined || kcal === undefined || p === undefined || c === undefined) {
+      return json({ error: 'Exercise fields required' }, 400);
+    }
+
+    await db.prepare(
+      'INSERT INTO exercise_history (user_id, date_key, idx, kcal, p, c, created_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)'
+    ).bind(userId, dateKey, idx, kcal, p, c).run();
+
+    return json({ success: true, message: 'Exercise history saved' }, 200);
+  } catch (e) {
+    console.error('Exercise save error:', e);
+    return json({ error: 'Exercise save failed: ' + e.message }, 500);
+  }
+}
+
+async function handleExerciseFetch(request, env) {
+  const db = getDb(env);
+  if (!db) return json({ error: 'Database not configured' }, 500);
+  await ensureSchema(db);
+
+  const userId = getUserIdFromAuth(request);
+  if (!userId) return json({ error: 'Unauthorized' }, 401);
+
+  try {
+    const rows = await db.prepare(
+      'SELECT * FROM exercise_history WHERE user_id = ? ORDER BY created_at DESC LIMIT 60'
+    ).bind(userId).all();
+
+    return json({ success: true, history: rows.results || [] }, 200);
+  } catch (e) {
+    console.error('Exercise fetch error:', e);
+    return json({ error: 'Exercise fetch failed: ' + e.message }, 500);
+  }
+}
+
 /* ================= HELPER FUNCTIONS ================= */
 
 function getUserIdFromAuth(request) {
   const auth = request.headers.get('Authorization') || '';
-  const token = auth.replace('Bearer ', '');
+  const token = auth.replace(/^Bearer\s+/i, '').trim();
   
   try {
     if (!token || typeof token !== 'string') return null;
+    
+    // Check standard 3-part JWT
     const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    const payload = JSON.parse(atob(parts[1]));
-    return payload.userId || null;
+    if (parts.length === 3) {
+      const payload = JSON.parse(atob(parts[1]));
+      return payload.userId || null;
+    }
+
+    // Check legacy base64 token (userId:timestamp)
+    const decoded = atob(token);
+    if (decoded.includes(':')) {
+      return decoded.split(':')[0] || null;
+    }
+
+    return null;
   } catch (e) {
     return null;
   }
