@@ -790,6 +790,10 @@ function getUserIdFromAuth(request) {
   }
 }
 
+function getUserId(request) {
+  return getUserIdFromAuth(request);
+}
+
 function makeToken(userId) {
   const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const payload = btoa(JSON.stringify({ userId, iat: Date.now() }));
@@ -819,7 +823,7 @@ async function handlePushSubscribe(request, env) {
     await ensureSchema(db);
 
     const body = await request.json();
-    const userId = getUserId(request) || body.userId || 'jithu';
+    const userId = getUserIdFromAuth(request) || body.userId || 'jithu';
     const sub = body.subscription;
 
     if (!sub || !sub.endpoint || !sub.keys || !sub.keys.p256dh || !sub.keys.auth) {
@@ -849,7 +853,7 @@ async function handlePushSendTest(request, env) {
     await ensureSchema(db);
 
     const body = await request.json().catch(() => ({}));
-    const userId = getUserId(request) || body.userId || 'jithu';
+    const userId = getUserIdFromAuth(request) || body.userId || 'jithu';
 
     let subs = [];
     if (body.subscription && body.subscription.endpoint && body.subscription.keys) {
