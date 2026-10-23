@@ -6444,13 +6444,34 @@
         </div>
 
 
-        <!-- // I FEEL IT IS DUPLICATE TO ENABLE MAIL REMAINDER SO I HAVE COMMENTED OUT THE SOUND NOTIFICATION SETTING -->
-        <!-- <div class="settings-group">
-      <label>
-        <div class="settings-checkbox" id="soundToggle" onclick="toggleNotificationSound()"></div>
-        <span>Sound on notification</span>
-      </label>
-    </div> -->
+        <!-- BACKGROUND PUSH & SOUND NOTIFICATIONS (iOS & PWA) -->
+        <div class="settings-group" style="background:var(--input-bg); border:1px solid var(--panel-brd); border-radius:16px; padding:16px; margin-top:14px">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+            <div style="font-weight:700; font-size:13px; display:flex; align-items:center; gap:8px">
+              <span style="color:var(--accent)">🔔</span> iOS Background Push & Sounds
+            </div>
+            <div id="pushActiveBadge" style="font-size:11px"><span style="color:var(--txt-dim)">○ Inactive</span></div>
+          </div>
+          <div style="font-size:11px; color:var(--txt-dim); line-height:1.45; margin-bottom:12px">
+            iPhones require Apple Web Push to deliver notifications when the app is closed. Tap below to connect this phone to Apple Push service.
+          </div>
+          
+          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px">
+            <button type="button" id="btnEnablePush" onclick="subscribeToPushNotifications()"
+              style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; padding:8px 14px; background:var(--accent); color:var(--accent-ink); border:none; border-radius:10px; cursor:pointer">
+              <span>🔔</span> Enable Background Push
+            </button>
+            <button type="button" id="btnTestPush" onclick="sendTestPushNotification()"
+              style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; padding:8px 12px; background:rgba(255,255,255,0.06); color:var(--txt); border:1px solid var(--panel-brd); border-radius:10px; cursor:pointer">
+              <span>📱</span> Test Push (Close App)
+            </button>
+            <button type="button" onclick="playNotificationSound()"
+              style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; padding:8px 12px; background:rgba(195,255,77,0.1); color:var(--accent); border:1px solid rgba(195,255,77,0.3); border-radius:10px; cursor:pointer">
+              <span>🔊</span> Preview Chime Sound
+            </button>
+          </div>
+          <div id="pushSubStatus" style="font-size:11px; margin-top:6px; min-height:16px"></div>
+        </div>
 
         <div class="settings-grid">
           <div class="settings-group speech-section-card">
@@ -11458,9 +11479,24 @@
 
       if (notificationSoundEnabled) playNotificationSound();
 
-      if ("Notification" in window && Notification.permission === "granted") {
-        const notifBody = `${meal.name}\n\nIngredients: ${meal.items.slice(0, 2).join(", ")}${meal.items.length > 2 ? " ..." : ""}`;
+      const notifBody = `${meal.name}\n\nIngredients: ${meal.items.slice(0, 2).join(", ")}${meal.items.length > 2 ? " ..." : ""}`;
 
+      // Use Service Worker showNotification (required for iOS Safari & PWA standalone mode)
+      if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready.then(reg => {
+          reg.showNotification(mealTime.label, {
+            body: notifBody,
+            icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23c3ff4d' width='192' height='192'/><text x='96' y='140' font-size='100' font-weight='bold' text-anchor='middle' fill='%23000'>GL</text></svg>",
+            badge: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%23c3ff4d' width='96' height='96'/><text x='48' y='70' font-size='50' text-anchor='middle' fill='%23000'>G</text></svg>",
+            tag: `meal-${key}`,
+            renotify: true,
+            requireInteraction: true,
+            vibrate: [200, 100, 200, 100, 200]
+          });
+        }).catch(err => {
+          console.warn('SW showNotification fallback:', err);
+        });
+      } else if ("Notification" in window && Notification.permission === "granted") {
         try {
           const notification = new Notification(mealTime.label, {
             body: notifBody,
@@ -11470,11 +11506,7 @@
             requireInteraction: true,
             vibrate: [200, 100, 200, 100, 200]
           });
-
-          notification.onclick = () => {
-            window.focus();
-            notification.close();
-          };
+          notification.onclick = () => { window.focus(); notification.close(); };
         } catch (e) {
           console.error('❌ Notification error:', e);
         }
@@ -11485,34 +11517,190 @@
       delete notificationState.lastNotified[key];
     }
 
+    /* Cool 3-Tone Ascending Glass Chime using Web Audio API */
     function playNotificationSound() {
       try {
         const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextCtor) {
-          console.log('🔇 AudioContext unsupported in this browser');
+        if (!AudioContextCtor) return;
+
+        const ctx = new AudioContextCtor();
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+
+        const now = ctx.currentTime;
+        const master = ctx.createGain();
+        master.gain.setValueAtTime(0.28, now);
+        master.connect(ctx.destination);
+
+        // Modern 3-note ascending crystal chime (F#5 -> C#6 -> F#6) with harmonic shimmer
+        const notes = [
+          { freq: 739.99, delay: 0, duration: 0.5 },
+          { freq: 1108.73, delay: 0.08, duration: 0.6 },
+          { freq: 1479.98, delay: 0.16, duration: 0.75 }
+        ];
+
+        notes.forEach(n => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(n.freq, now + n.delay);
+
+          // Harmonic overtone for shimmering bell texture
+          const overtone = ctx.createOscillator();
+          const overtoneGain = ctx.createGain();
+          overtone.type = 'triangle';
+          overtone.frequency.setValueAtTime(n.freq * 2.005, now + n.delay);
+          overtoneGain.gain.setValueAtTime(0.045, now + n.delay);
+          overtoneGain.gain.exponentialRampToValueAtTime(0.0001, now + n.delay + (n.duration * 0.45));
+          overtone.connect(overtoneGain);
+          overtoneGain.connect(master);
+
+          gain.gain.setValueAtTime(0.001, now + n.delay);
+          gain.gain.linearRampToValueAtTime(0.2, now + n.delay + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + n.delay + n.duration);
+
+          osc.connect(gain);
+          gain.connect(master);
+
+          osc.start(now + n.delay);
+          osc.stop(now + n.delay + n.duration);
+          overtone.start(now + n.delay);
+          overtone.stop(now + n.delay + (n.duration * 0.45));
+        });
+      } catch (e) {
+        console.error('❌ Notification sound error:', e);
+      }
+    }
+
+    /* ================= iOS / WEB PUSH NOTIFICATIONS ================= */
+    const VAPID_PUBLIC_KEY = 'BOKyCzx7nMmD_WKrXbpYD3IbxOPcsBKaUiMHguXPvzFm1tRV7pKHx8D8Rrch7mDQU-9es9J5tvRrewya5rEmCbY';
+
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
+
+    async function subscribeToPushNotifications() {
+      const statusEl = document.getElementById('pushSubStatus');
+      const btn = document.getElementById('btnEnablePush');
+      if (btn) btn.disabled = true;
+      if (statusEl) statusEl.innerHTML = '<span style="color:var(--txt-dim)">⏳ Requesting notification permission...</span>';
+
+      try {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+          if (statusEl) statusEl.innerHTML = '<span style="color:var(--red)">❌ Push not supported in this browser. On iPhone, make sure you opened this from your Home Screen!</span>';
+          if (btn) btn.disabled = false;
           return;
         }
 
-        const audioContext = new AudioContextCtor();
-        if (audioContext.state === 'suspended') {
-          audioContext.resume();
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+          if (statusEl) statusEl.innerHTML = '<span style="color:var(--red)">⚠️ Notification permission denied. Please enable in iPhone Settings > Notifications.</span>';
+          if (btn) btn.disabled = false;
+          return;
         }
 
-        const now = audioContext.currentTime;
-        const osc = audioContext.createOscillator();
-        const gain = audioContext.createGain();
-        osc.connect(gain);
-        gain.connect(audioContext.destination);
-        osc.frequency.value = 880;
-        osc.type = 'sine';
-        gain.gain.setValueAtTime(0.05, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-        osc.start(now);
-        osc.stop(now + 0.25);
-        console.log('🔊 Notification sound triggered');
-      } catch (e) {
-        console.error('❌ Notification sound failed:', e);
+        if (statusEl) statusEl.innerHTML = '<span style="color:var(--txt-dim)">⏳ Registering with Apple Push service...</span>';
+        const reg = await navigator.serviceWorker.ready;
+        const convertedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedKey
+          });
+        }
+
+        if (statusEl) statusEl.innerHTML = '<span style="color:var(--txt-dim)">⏳ Saving to Cloudflare D1...</span>';
+        const userId = currentUser ? currentUser.userId : 'jithu';
+        const resp = await fetch(`${API_URL}/api/push/subscribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}) },
+          body: JSON.stringify({ userId, subscription: sub })
+        });
+        const res = await resp.json();
+
+        if (res.success) {
+          if (statusEl) statusEl.innerHTML = '<span style="color:var(--accent); font-weight:700">✅ Background notifications active! You will receive alerts even when app is closed.</span>';
+          showNotification('iOS Background Push Enabled! 🔔', 'success', 3000);
+          playNotificationSound();
+          updatePushStatusBadge(true);
+        } else {
+          if (statusEl) statusEl.innerHTML = `<span style="color:var(--red)">❌ Server error: ${res.error || 'Failed to save'}</span>`;
+        }
+      } catch (err) {
+        console.error('Push registration error:', err);
+        if (statusEl) statusEl.innerHTML = `<span style="color:var(--red)">❌ ${err.message || 'Push registration failed'}</span>`;
+      } finally {
+        if (btn) btn.disabled = false;
       }
+    }
+
+    async function sendTestPushNotification() {
+      const statusEl = document.getElementById('pushSubStatus');
+      const btn = document.getElementById('btnTestPush');
+      if (btn) btn.disabled = true;
+      if (statusEl) statusEl.innerHTML = '<span style="color:var(--txt-dim)">🚀 Sending test push through Apple APNs...</span>';
+
+      try {
+        const userId = currentUser ? currentUser.userId : 'jithu';
+        let sub = null;
+        if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+          const reg = await navigator.serviceWorker.ready;
+          sub = await reg.pushManager.getSubscription();
+        }
+
+        const resp = await fetch(`${API_URL}/api/push/send-test`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}) },
+          body: JSON.stringify({
+            userId,
+            subscription: sub,
+            title: '🥗 NutriFin Meal Reminder',
+            body: 'Hey! Your lunch meal is coming up in 1 hour. Tap to view ingredients!'
+          })
+        });
+        const res = await resp.json();
+
+        if (res.success) {
+          if (statusEl) statusEl.innerHTML = '<span style="color:var(--accent); font-weight:700">🎉 Test push delivered to Apple APNs! Lock or close your phone now to see the banner!</span>';
+          showNotification('Push sent! Lock or swipe away your phone to test.', 'info', 4000);
+        } else {
+          if (statusEl) statusEl.innerHTML = `<span style="color:var(--red)">⚠️ ${res.error || 'Could not deliver push'}</span>`;
+        }
+      } catch (err) {
+        if (statusEl) statusEl.innerHTML = `<span style="color:var(--red)">❌ Test push failed: ${err.message}</span>`;
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function updatePushStatusBadge(isSubscribed) {
+      const badge = document.getElementById('pushActiveBadge');
+      if (!badge) return;
+      if (isSubscribed) {
+        badge.innerHTML = '<span style="color:var(--accent); font-weight:700">● Active</span>';
+      } else {
+        badge.innerHTML = '<span style="color:var(--txt-dim)">○ Inactive</span>';
+      }
+    }
+
+    async function checkPushSubscriptionStatus() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        updatePushStatusBadge(!!sub);
+      } catch (e) { }
     }
 
     function stopSpeech() {
@@ -11626,6 +11814,7 @@
     // Initialize notifications
     loadNotificationPrefs();
     requestNotificationPermission();
+    checkPushSubscriptionStatus();
     setInterval(checkMealReminders, 60000);
     checkMealReminders();
   </script>

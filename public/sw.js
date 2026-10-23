@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gains-ledger-v4';
+const CACHE_NAME = 'gains-ledger-v5';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -70,23 +70,34 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Handle push notifications
+// Handle push notifications (delivered even when PWA is closed on iOS)
 self.addEventListener('push', event => {
-  if (!event.data) return;
+  let data = {
+    title: '🥗 NutriFin Meal Reminder',
+    body: 'Time to prepare your healthy meal!'
+  };
 
-  const data = event.data.json();
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data.body = event.data.text();
+    }
+  }
+
   const options = {
-    body: data.body,
+    body: data.body || 'Meal time is approaching!',
     icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect fill="%23c3ff4d" width="192" height="192"/><text x="96" y="140" font-size="100" font-weight="bold" text-anchor="middle" fill="%23000">GL</text></svg>',
     badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect fill="%23c3ff4d" width="96" height="96"/><text x="48" y="70" font-size="50" text-anchor="middle" fill="%23000">G</text></svg>',
-    tag: data.tag || 'gains-ledger',
+    tag: data.tag || 'nutrifin-meal-alert',
+    renotify: true,
     requireInteraction: true,
-    vibrate: [200, 100, 200],
-    data: data
+    vibrate: [200, 100, 200, 100, 200],
+    data: data.data || { url: '/' }
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Gains Ledger', options)
+    self.registration.showNotification(data.title || 'NutriFin Meal Reminder', options)
   );
 });
 
@@ -95,11 +106,11 @@ self.addEventListener('notificationclick', event => {
   event.notification.close();
 
   event.waitUntil(
-    clients.matchAll({ type: 'window' }).then(clientList => {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
       // If app is already open, focus it
       for (let i = 0; i < clientList.length; i++) {
         const client = clientList[i];
-        if (client.url === '/' && 'focus' in client) {
+        if ('focus' in client) {
           return client.focus();
         }
       }

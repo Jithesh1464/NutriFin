@@ -9,3 +9,6 @@ database_id = "571eb048-9b75-4bf1-be00-5f9f87dd3ff9"
 
 [vars]
 JWT_SECRET = "change-me-for-production"
+
+[triggers]
+crons = ["*/15 * * * *"]

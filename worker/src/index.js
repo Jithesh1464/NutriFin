@@ -1,3 +1,5 @@
+import { buildPushPayload } from '@block65/webcrypto-web-push';
+
 /* ================= PRODUCTION CLOUDFLARE WORKER + D1 ================= */
 
 const CORS_HEADERS = {
@@ -8,6 +10,10 @@ const CORS_HEADERS = {
 
 const JWT_SECRET = 'gains-ledger-secret-key-2024'; // Use env.SECRET in production
 const DEMO_USER = { userId: 'demo1', password: '12345678' };
+
+const VAPID_PUBLIC_KEY = 'BOKyCzx7nMmD_WKrXbpYD3IbxOPcsBKaUiMHguXPvzFm1tRV7pKHx8D8Rrch7mDQU-9es9J5tvRrewya5rEmCbY';
+const VAPID_PRIVATE_KEY = 'nF_DyjHqd-fWgvgjYhUwIXnFdjGt69dpuS-A-2l_nA8';
+const VAPID_SUBJECT = 'mailto:support@nutrifin.app';
 
 const getDb = (env) => env.DB || env.gains_ledger_db;
 
@@ -45,8 +51,18 @@ async function ensureSchema(db) {
         c REAL NOT NULL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        endpoint TEXT UNIQUE NOT NULL,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
       CREATE INDEX IF NOT EXISTS idx_user_data_user_type ON user_data (user_id, data_type);
       CREATE INDEX IF NOT EXISTS idx_exercise_history_user_date ON exercise_history (user_id, date_key);
+      CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions (user_id);
     `);
   } catch (e) {
     console.warn('ensureSchema base create warning:', e.message);
@@ -163,7 +179,26 @@ export default {
       return handleFetchData(request, env);
     }
 
+    // Push Notification routes (Web Push for iOS PWA)
+    if (path === '/api/push/vapid-key' && request.method === 'GET') {
+      return json({ publicKey: VAPID_PUBLIC_KEY });
+    }
+    if (path === '/api/push/subscribe' && request.method === 'POST') {
+      return handlePushSubscribe(request, env);
+    }
+    if (path === '/api/push/send-test' && request.method === 'POST') {
+      return handlePushSendTest(request, env);
+    }
+
     return json({ error: 'Not found' }, 404);
+  },
+
+  async scheduled(event, env, ctx) {
+    if (ctx && ctx.waitUntil) {
+      ctx.waitUntil(handleScheduledReminders(env));
+    } else {
+      await handleScheduledReminders(env);
+    }
   },
 };
 
@@ -773,4 +808,158 @@ function json(data, status = 200) {
     status,
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   });
+}
+
+/* ================= WEB PUSH & BACKGROUND NOTIFICATIONS ================= */
+
+async function handlePushSubscribe(request, env) {
+  try {
+    const db = getDb(env);
+    if (!db) return json({ error: 'Database not available' }, 500);
+    await ensureSchema(db);
+
+    const body = await request.json();
+    const userId = getUserId(request) || body.userId || 'jithu';
+    const sub = body.subscription;
+
+    if (!sub || !sub.endpoint || !sub.keys || !sub.keys.p256dh || !sub.keys.auth) {
+      return json({ error: 'Invalid PushSubscription: missing endpoint or keys' }, 400);
+    }
+
+    await db.prepare(`
+      INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, updated_at)
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(endpoint) DO UPDATE SET
+        user_id = excluded.user_id,
+        p256dh = excluded.p256dh,
+        auth = excluded.auth,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(userId, sub.endpoint, sub.keys.p256dh, sub.keys.auth).run();
+
+    return json({ success: true, message: 'Push subscription saved successfully' });
+  } catch (e) {
+    return json({ error: e.message }, 500);
+  }
+}
+
+async function handlePushSendTest(request, env) {
+  try {
+    const db = getDb(env);
+    if (!db) return json({ error: 'Database not available' }, 500);
+    await ensureSchema(db);
+
+    const body = await request.json().catch(() => ({}));
+    const userId = getUserId(request) || body.userId || 'jithu';
+
+    let subs = [];
+    if (body.subscription && body.subscription.endpoint && body.subscription.keys) {
+      subs = [body.subscription];
+    } else {
+      const { results } = await db.prepare('SELECT * FROM push_subscriptions WHERE user_id = ?').bind(userId).all();
+      subs = (results || []).map(r => ({
+        endpoint: r.endpoint,
+        keys: { p256dh: r.p256dh, auth: r.auth }
+      }));
+    }
+
+    if (!subs || subs.length === 0) {
+      return json({ error: 'No active push subscriptions found for this account. Tap Enable Background Notifications first!' }, 404);
+    }
+
+    const payload = {
+      title: body.title || '🥗 NutriFin Meal Reminder',
+      body: body.body || 'Meal reminder: Time to prepare your meal! Tap to view ingredients & macros.',
+      tag: 'nutrifin-test-alert',
+      data: { url: '/' }
+    };
+
+    let sent = 0;
+    const errors = [];
+
+    for (const sub of subs) {
+      try {
+        const pushReq = await buildPushPayload(
+          { data: JSON.stringify(payload) },
+          sub,
+          { subject: VAPID_SUBJECT, publicKey: VAPID_PUBLIC_KEY, privateKey: VAPID_PRIVATE_KEY }
+        );
+        const res = await fetch(sub.endpoint, pushReq);
+        if (res.ok || res.status === 201) {
+          sent++;
+        } else if (res.status === 410 || res.status === 404) {
+          // Stale subscription, cleanup
+          await db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').bind(sub.endpoint).run();
+        } else {
+          const errText = await res.text();
+          errors.push(`Status ${res.status}: ${errText}`);
+        }
+      } catch (err) {
+        errors.push(err.message);
+      }
+    }
+
+    return json({
+      success: sent > 0,
+      sentCount: sent,
+      total: subs.length,
+      errors: errors.length > 0 ? errors : undefined
+    });
+  } catch (e) {
+    return json({ error: e.message }, 500);
+  }
+}
+
+async function handleScheduledReminders(env) {
+  try {
+    const db = getDb(env);
+    if (!db) return;
+    await ensureSchema(db);
+
+    const { results } = await db.prepare('SELECT * FROM push_subscriptions').all();
+    if (!results || results.length === 0) return;
+
+    // Convert current UTC time to IST (UTC+05:30)
+    const istTime = new Date(Date.now() + (5.5 * 3600 * 1000));
+    const hours = String(istTime.getUTCHours()).padStart(2, '0');
+    const mins = String(istTime.getUTCMinutes()).padStart(2, '0');
+    const currentTime = `${hours}:${mins}`;
+
+    // Meal schedule reminders (remind 1 hour before meal)
+    const SCHEDULE = {
+      '07:00': { meal: 'Breakfast', time: '08:00 AM' },
+      '12:00': { meal: 'Lunch', time: '01:00 PM' },
+      '16:00': { meal: 'Pre-Workout Snack', time: '05:00 PM' },
+      '18:15': { meal: 'Post-Workout Shake', time: '07:15 PM' },
+      '18:45': { meal: 'Dinner', time: '07:45 PM' }
+    };
+
+    const reminder = SCHEDULE[currentTime];
+    if (!reminder) return;
+
+    const payload = {
+      title: `🥗 ${reminder.meal} Reminder`,
+      body: `Your ${reminder.meal.toLowerCase()} is coming up at ${reminder.time}! Tap to view your nutrition plan.`,
+      tag: `meal-${reminder.meal.toLowerCase().replace(/\s+/g, '-')}`,
+      data: { url: '/' }
+    };
+
+    for (const r of results) {
+      try {
+        const sub = { endpoint: r.endpoint, keys: { p256dh: r.p256dh, auth: r.auth } };
+        const pushReq = await buildPushPayload(
+          { data: JSON.stringify(payload) },
+          sub,
+          { subject: VAPID_SUBJECT, publicKey: VAPID_PUBLIC_KEY, privateKey: VAPID_PRIVATE_KEY }
+        );
+        const res = await fetch(sub.endpoint, pushReq);
+        if (res.status === 410 || res.status === 404) {
+          await db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').bind(r.endpoint).run();
+        }
+      } catch (e) {
+        console.warn('Scheduled push fail:', e.message);
+      }
+    }
+  } catch (e) {
+    console.error('Scheduled reminder error:', e);
+  }
 }
