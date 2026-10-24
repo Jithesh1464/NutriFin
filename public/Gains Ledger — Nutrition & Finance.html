@@ -1435,6 +1435,62 @@
       transform: translateY(0);
     }
 
+    /* ======== EXCEL REPORT EXPORT MODAL STYLES ======== */
+    .export-scope-pill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 9px 8px;
+      background: var(--input-bg);
+      border: 1px solid var(--panel-brd);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--txt);
+      text-align: center;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .export-scope-pill input {
+      display: none;
+    }
+    .export-scope-pill:hover {
+      border-color: rgba(195, 255, 77, 0.4);
+    }
+    .export-scope-pill.active,
+    .export-scope-pill:has(input:checked) {
+      background: rgba(195, 255, 77, 0.14) !important;
+      border-color: var(--accent) !important;
+      color: var(--accent) !important;
+      font-weight: 700;
+    }
+
+    .export-format-card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 12px 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--panel-brd);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .export-format-card input {
+      display: none;
+    }
+    .export-format-card:hover {
+      border-color: rgba(195, 255, 77, 0.4);
+    }
+    .export-format-card.active,
+    .export-format-card:has(input:checked) {
+      background: rgba(195, 255, 77, 0.12) !important;
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 14px rgba(195, 255, 77, 0.16);
+    }
+
     .donut-center-text {
       position: absolute;
       width: 100%;
@@ -6293,6 +6349,16 @@
               </svg>
               <span>Settings & Preferences</span>
             </button>
+            <button onclick="openExportReportModal(); toggleProfileMenu(); return false;" class="profile-action-btn">
+              <svg class="profile-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="8" y1="13" x2="16" y2="13"></line>
+                <line x1="8" y1="17" x2="16" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              <span>Export Excel Report</span>
+            </button>
             <button onclick="viewProgressDashboard(); return false;" class="profile-action-btn">
               <svg class="profile-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="7" height="7"></rect>
@@ -6380,6 +6446,21 @@
               <strong id="settingsUserName">User</strong>
             </div>
             <button type="button" class="setting-toggle-btn" onclick="openChangeEmailModal()">Change Email</button>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Data &amp; Reports</div>
+          <div class="account-box" style="flex-direction:column; align-items:flex-start; gap:10px">
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%; flex-wrap:wrap; gap:8px">
+              <div>
+                <div style="font-weight:600; color:var(--txt)">Detailed Financial Statement</div>
+                <div style="font-size:11px; color:var(--txt-dim); margin-top:2px">Multi-sheet Excel report (.xls / .csv) with summary, expenses, income, investments &amp; stocks</div>
+              </div>
+              <button type="button" class="setting-toggle-btn" onclick="closeUserSettings(); openExportReportModal();" style="white-space:nowrap">
+                Export Report
+              </button>
+            </div>
           </div>
         </div>
 
@@ -7282,6 +7363,107 @@
       <div class="edit-form-buttons">
         <button class="btn-cancel" onclick="closeGoalModal()">Cancel</button>
         <button class="btn-save" onclick="saveGoalEdit()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPORT DETAILED FINANCIAL REPORT MODAL -->
+  <div class="edit-modal" id="exportReportModal">
+    <div class="edit-form" style="max-width:540px">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px">
+        <div style="display:flex; align-items:center; gap:10px">
+          <div style="width:38px; height:38px; border-radius:10px; background:rgba(195,255,77,0.15); border:1px solid rgba(195,255,77,0.3); display:flex; align-items:center; justify-content:center; color:var(--accent)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="8" y1="13" x2="16" y2="13"></line>
+              <line x1="8" y1="17" x2="16" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+          </div>
+          <div>
+            <h3 style="margin:0; font-size:17px; font-weight:750">Export Detailed Report</h3>
+            <div style="font-size:12px; color:var(--txt-dim); margin-top:2px">Generate and download financial records directly to your device</div>
+          </div>
+        </div>
+        <button class="btn-cancel" onclick="closeExportReportModal()" style="padding:4px 8px; border-radius:8px; font-size:16px; margin:0">&times;</button>
+      </div>
+
+      <div class="edit-form-group">
+        <label>Time Period Scope</label>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:4px">
+          <label class="export-scope-pill active" id="scopeAllLabel">
+            <input type="radio" name="exportScope" value="all" checked onchange="updateExportPreview()">
+            <span>All Time</span>
+          </label>
+          <label class="export-scope-pill" id="scopeYearLabel">
+            <input type="radio" name="exportScope" value="year" onchange="updateExportPreview()">
+            <span>This Year</span>
+          </label>
+          <label class="export-scope-pill" id="scopeMonthLabel">
+            <input type="radio" name="exportScope" value="month" onchange="updateExportPreview()">
+            <span>Active Month</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="edit-form-group">
+        <label>File Format</label>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:4px">
+          <label class="export-format-card active" id="formatExcelLabel">
+            <input type="radio" name="exportFormat" value="excel" checked onchange="updateExportPreview()">
+            <div style="display:flex; align-items:center; gap:8px">
+              <span style="font-size:20px">📊</span>
+              <div>
+                <div style="font-weight:700; font-size:13px; color:var(--txt)">Excel (.xls)</div>
+                <div style="font-size:10px; color:var(--txt-dim)">Multi-sheet styled workbook</div>
+              </div>
+            </div>
+            <span style="font-size:10px; background:var(--accent); color:var(--accent-ink); padding:2px 6px; border-radius:6px; font-weight:700; margin-top:8px; display:inline-block">Recommended</span>
+          </label>
+          <label class="export-format-card" id="formatCsvLabel">
+            <input type="radio" name="exportFormat" value="csv" onchange="updateExportPreview()">
+            <div style="display:flex; align-items:center; gap:8px">
+              <span style="font-size:20px">📄</span>
+              <div>
+                <div style="font-weight:700; font-size:13px; color:var(--txt)">CSV Document (.csv)</div>
+                <div style="font-size:10px; color:var(--txt-dim)">Standard tabular sheet</div>
+              </div>
+            </div>
+            <span style="font-size:10px; background:var(--input-bg); color:var(--txt-dim); padding:2px 6px; border-radius:6px; font-weight:600; margin-top:8px; display:inline-block">Universal</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Preview summary box -->
+      <div class="edit-form-group">
+        <label>Included in this Export</label>
+        <div style="background:var(--input-bg); border:1px solid var(--panel-brd); border-radius:12px; padding:12px; font-size:12px; line-height:1.6" id="exportDataSummary">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px">
+            <div style="display:flex; align-items:center; gap:6px"><span style="color:var(--accent)">✓</span> Executive Summary &amp; Net Worth</div>
+            <div style="display:flex; align-items:center; gap:6px"><span style="color:var(--accent)">✓</span> Detailed Expenses (<span id="expCountPreview">0</span>)</div>
+            <div style="display:flex; align-items:center; gap:6px"><span style="color:var(--accent)">✓</span> Income &amp; Cash Flow (<span id="incCountPreview">0</span>)</div>
+            <div style="display:flex; align-items:center; gap:6px"><span style="color:var(--accent)">✓</span> Investments &amp; FDs (<span id="savCountPreview">0</span>)</div>
+            <div style="display:flex; align-items:center; gap:6px"><span style="color:var(--accent)">✓</span> Stock Portfolio (<span id="stockCountPreview">0</span>)</div>
+            <div style="display:flex; align-items:center; gap:6px"><span style="color:var(--accent)">✓</span> Budgets &amp; Goals (<span id="budgetCountPreview">0</span>)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Privacy & Storage Note -->
+      <div style="display:flex; align-items:center; gap:8px; font-size:11px; color:var(--txt-dim); margin-bottom:18px; background:rgba(255,255,255,0.03); border-radius:8px; padding:8px 12px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none; color:var(--accent)">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>Generated securely and directly inside your browser. Saved safely to your device's local storage or Downloads folder.</span>
+      </div>
+
+      <div class="edit-form-buttons">
+        <button class="btn-cancel" onclick="closeExportReportModal()">Cancel</button>
+        <button class="btn-save" onclick="executeReportExport()" id="executeExportBtn" style="background:var(--accent); color:var(--accent-ink)">
+          📥 Download Report
+        </button>
       </div>
     </div>
   </div>
@@ -10923,6 +11105,683 @@
       renderFinance();
       showNotification('Goal deleted', 'success', 2000);
       syncToCloudflare('goals', goals, true, [id]).catch(() => {});
+    }
+
+    /* ================= DETAILED EXCEL & CSV REPORT EXPORT ================= */
+    function escapeXml(unsafe) {
+      if (unsafe === undefined || unsafe === null) return '';
+      return String(unsafe)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    }
+
+    function openExportReportModal() {
+      updateExportPreview();
+      const modal = document.getElementById('exportReportModal');
+      if (modal) modal.classList.add('show');
+    }
+
+    function closeExportReportModal() {
+      const modal = document.getElementById('exportReportModal');
+      if (modal) modal.classList.remove('show');
+    }
+
+    function getExpensesForScope(scope) {
+      const allExp = loadExpenses();
+      if (scope === 'all') return allExp;
+
+      const now = new Date();
+      if (scope === 'year') {
+        const curYear = now.getFullYear();
+        const start = new Date(curYear, 0, 1);
+        const end = new Date(curYear, 11, 31, 23, 59, 59);
+        return allExp.filter(e => isDateInRange(e.date, { start, end }));
+      }
+
+      if (scope === 'month') {
+        return getFilteredExpenses();
+      }
+
+      return allExp;
+    }
+
+    function getIncomeForScope(scope) {
+      const allInc = loadIncome();
+      if (scope === 'all') return allInc;
+
+      const now = new Date();
+      if (scope === 'year') {
+        const curYear = now.getFullYear();
+        const start = new Date(curYear, 0, 1);
+        const end = new Date(curYear, 11, 31, 23, 59, 59);
+        return allInc.filter(i => isDateInRange(i.date, { start, end }));
+      }
+
+      if (scope === 'month') {
+        return getFilteredIncome();
+      }
+
+      return allInc;
+    }
+
+    function updateExportPreview() {
+      const scopeEl = document.querySelector('input[name="exportScope"]:checked');
+      const scope = scopeEl ? scopeEl.value : 'all';
+
+      const exp = getExpensesForScope(scope);
+      const inc = getIncomeForScope(scope);
+      const sav = loadSavings();
+      const stocks = loadStocks();
+      const budgets = loadBudgets();
+      const goals = loadGoals();
+
+      const expEl = document.getElementById('expCountPreview');
+      const incEl = document.getElementById('incCountPreview');
+      const savEl = document.getElementById('savCountPreview');
+      const stockEl = document.getElementById('stockCountPreview');
+      const budgetEl = document.getElementById('budgetCountPreview');
+
+      if (expEl) expEl.textContent = `${exp.length}`;
+      if (incEl) incEl.textContent = `${inc.length}`;
+      if (savEl) savEl.textContent = `${sav.length}`;
+      if (stockEl) stockEl.textContent = `${stocks.length}`;
+      if (budgetEl) budgetEl.textContent = `${budgets.length + goals.length}`;
+
+      document.querySelectorAll('.export-scope-pill').forEach(pill => {
+        const radio = pill.querySelector('input');
+        pill.classList.toggle('active', !!(radio && radio.checked));
+      });
+      document.querySelectorAll('.export-format-card').forEach(card => {
+        const radio = card.querySelector('input');
+        card.classList.toggle('active', !!(radio && radio.checked));
+      });
+    }
+
+    function downloadBlobFile(content, mimeType, filename) {
+      const blob = new Blob([content], { type: mimeType });
+      if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+        window.navigator.msSaveOrOpenBlob(blob, filename);
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 400);
+    }
+
+    function generateExcelWorkbookReport(data, userName, periodLabel) {
+      const { expenses = [], income = [], savings = [], stocks = [], budgets = [], goals = [] } = data;
+
+      const totalExp = expenses.reduce((sum, e) => sum + (parseFloat(e.amt) || 0), 0);
+      const totalInc = income.reduce((sum, i) => sum + (parseFloat(i.amt) || 0), 0);
+      const totalSavingsCurrent = savings.reduce((sum, s) => sum + (parseFloat(s.current) || 0), 0);
+      const totalSavingsPrincipal = savings.reduce((sum, s) => sum + (parseFloat(s.principal) || 0), 0);
+      const totalSavingsGains = savings.reduce((sum, s) => sum + (parseFloat(s.gain) || 0), 0);
+
+      const totalStockCost = stocks.reduce((sum, st) => sum + (parseFloat(st.shares || 0) * parseFloat(st.avgPrice || 0)), 0);
+      const totalStockVal = stocks.reduce((sum, st) => sum + (parseFloat(st.shares || 0) * parseFloat(st.current || 0)), 0);
+      const totalStockGain = totalStockVal - totalStockCost;
+
+      const availableCash = totalInc - totalExp;
+      const netWorth = availableCash + totalSavingsCurrent + totalStockVal;
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Author>${escapeXml(userName)}</Author>
+  <Created>${new Date().toISOString()}</Created>
+  <Company>NutriFin - Gains Ledger</Company>
+ </DocumentProperties>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Center"/>
+   <Borders/>
+   <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#1A1F16"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="sTitle">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+   <Font ss:FontName="Segoe UI" ss:Size="16" ss:Bold="1" ss:Color="#0F172A"/>
+  </Style>
+  <Style ss:ID="sSubTitle">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+   <Font ss:FontName="Segoe UI" ss:Size="10" ss:Italic="1" ss:Color="#64748B"/>
+  </Style>
+  <Style ss:ID="sSectionBanner">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+   <Font ss:FontName="Segoe UI" ss:Size="11" ss:Bold="1" ss:Color="#FFFFFF"/>
+   <Interior ss:Color="#1E293B" ss:Pattern="Solid"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#0F172A"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="sHeader">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Font ss:FontName="Segoe UI" ss:Size="10" ss:Bold="1" ss:Color="#0F172A"/>
+   <Interior ss:Color="#C3FF4D" ss:Pattern="Solid"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="sData">
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="sDataCenter">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="sCurrency">
+   <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+   <NumberFormat ss:Format="₹#,##0.00"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="sCurrencyBold">
+   <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+   <Font ss:FontName="Segoe UI" ss:Size="10" ss:Bold="1" ss:Color="#0F172A"/>
+   <NumberFormat ss:Format="₹#,##0.00"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#94A3B8"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="sCurrencyPos">
+   <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+   <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#16A34A" ss:Bold="1"/>
+   <NumberFormat ss:Format="₹#,##0.00"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="sCurrencyNeg">
+   <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+   <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#DC2626" ss:Bold="1"/>
+   <NumberFormat ss:Format="₹#,##0.00"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="sPercent">
+   <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+   <NumberFormat ss:Format="0.0%"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+   </Borders>
+  </Style>
+ </Styles>`;
+
+      // 1. EXECUTIVE SUMMARY SHEET
+      xml += `
+ <Worksheet ss:Name="Executive Summary">
+  <Table ss:DefaultColumnWidth="120" ss:DefaultRowHeight="20">
+   <Column ss:Width="200"/>
+   <Column ss:Width="160"/>
+   <Column ss:Width="260"/>
+
+   <Row ss:Height="30">
+    <Cell ss:MergeAcross="2" ss:StyleID="sTitle"><Data ss:Type="String">NutriFin — Personal Financial Statement</Data></Cell>
+   </Row>
+   <Row ss:Height="18">
+    <Cell ss:MergeAcross="2" ss:StyleID="sSubTitle"><Data ss:Type="String">User: ${escapeXml(userName)}  |  Period: ${escapeXml(periodLabel)}  |  Generated on: ${todayStr}</Data></Cell>
+   </Row>
+   <Row ss:Height="12"></Row>
+
+   <Row ss:Height="24">
+    <Cell ss:MergeAcross="2" ss:StyleID="sSectionBanner"><Data ss:Type="String">1. NET WORTH &amp; CASH FLOW OVERVIEW</Data></Cell>
+   </Row>
+   <Row ss:Height="20">
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Metric</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Amount (₹)</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Notes / Description</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">Total Income / Salary</Data></Cell>
+    <Cell ss:StyleID="sCurrencyPos"><Data ss:Type="Number">${totalInc.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">Cumulative earnings for period (${income.length} records)</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">Total Expenses</Data></Cell>
+    <Cell ss:StyleID="sCurrencyNeg"><Data ss:Type="Number">${totalExp.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">Cumulative spending for period (${expenses.length} records)</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">Available Liquid Cash</Data></Cell>
+    <Cell ss:StyleID="${availableCash >= 0 ? 'sCurrencyPos' : 'sCurrencyNeg'}"><Data ss:Type="Number">${availableCash.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">Net unspent liquid cash (Income - Expenses)</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">Savings &amp; Fixed Deposits</Data></Cell>
+    <Cell ss:StyleID="sCurrency"><Data ss:Type="Number">${totalSavingsCurrent.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">FDs, Mutual Funds &amp; Gold principal + accrued gains</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">Stock Portfolio Value</Data></Cell>
+    <Cell ss:StyleID="sCurrency"><Data ss:Type="Number">${totalStockVal.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">Current market value of equity holdings (${stocks.length} stocks)</Data></Cell>
+   </Row>
+   <Row ss:Height="22">
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">ESTIMATED TOTAL NET WORTH</Data></Cell>
+    <Cell ss:StyleID="sCurrencyBold"><Data ss:Type="Number">${netWorth.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">Liquid Cash + Savings Current + Stock Holdings</Data></Cell>
+   </Row>
+   <Row ss:Height="14"></Row>
+
+   <Row ss:Height="24">
+    <Cell ss:MergeAcross="2" ss:StyleID="sSectionBanner"><Data ss:Type="String">2. INVESTMENT PERFORMANCE SUMMARY</Data></Cell>
+   </Row>
+   <Row ss:Height="20">
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Portfolio Asset</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Invested Capital (₹)</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Unrealized Gain / Return (₹)</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">Fixed Deposits &amp; Savings</Data></Cell>
+    <Cell ss:StyleID="sCurrency"><Data ss:Type="Number">${totalSavingsPrincipal.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sCurrencyPos"><Data ss:Type="Number">${totalSavingsGains.toFixed(2)}</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">Equities &amp; Stocks</Data></Cell>
+    <Cell ss:StyleID="sCurrency"><Data ss:Type="Number">${totalStockCost.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="${totalStockGain >= 0 ? 'sCurrencyPos' : 'sCurrencyNeg'}"><Data ss:Type="Number">${totalStockGain.toFixed(2)}</Data></Cell>
+   </Row>
+   <Row ss:Height="22">
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">TOTAL INVESTMENTS</Data></Cell>
+    <Cell ss:StyleID="sCurrencyBold"><Data ss:Type="Number">${(totalSavingsPrincipal + totalStockCost).toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sCurrencyBold"><Data ss:Type="Number">${(totalSavingsGains + totalStockGain).toFixed(2)}</Data></Cell>
+   </Row>
+  </Table>
+ </Worksheet>`;
+
+      // 2. EXPENSES SHEET
+      xml += `
+ <Worksheet ss:Name="Expenses">
+  <Table ss:DefaultColumnWidth="100" ss:DefaultRowHeight="20">
+   <Column ss:Width="90"/>
+   <Column ss:Width="130"/>
+   <Column ss:Width="220"/>
+   <Column ss:Width="110"/>
+   <Column ss:Width="100"/>
+   <Column ss:Width="140"/>
+   <Row ss:Height="26">
+    <Cell ss:MergeAcross="5" ss:StyleID="sTitle"><Data ss:Type="String">Detailed Expense Transactions</Data></Cell>
+   </Row>
+   <Row ss:Height="20">
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Date</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Category</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Description</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Amount (₹)</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Payment Method</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Tags</Data></Cell>
+   </Row>`;
+
+      expenses.forEach(e => {
+        xml += `
+   <Row>
+    <Cell ss:StyleID="sDataCenter"><Data ss:Type="String">${escapeXml(e.date)}</Data></Cell>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">${escapeXml(e.cat || 'General')}</Data></Cell>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">${escapeXml(e.desc || '')}</Data></Cell>
+    <Cell ss:StyleID="sCurrency"><Data ss:Type="Number">${(parseFloat(e.amt) || 0).toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sDataCenter"><Data ss:Type="String">${escapeXml(e.method || 'Cash')}</Data></Cell>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">${escapeXml(Array.isArray(e.tags) ? e.tags.join(', ') : (e.tags || ''))}</Data></Cell>
+   </Row>`;
+      });
+
+      xml += `
+   <Row ss:Height="22">
+    <Cell ss:StyleID="sHeader" ss:MergeAcross="2"><Data ss:Type="String">TOTAL EXPENSES</Data></Cell>
+    <Cell ss:StyleID="sCurrencyBold"><Data ss:Type="Number">${totalExp.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sDataCenter"><Data ss:Type="String">${expenses.length} Records</Data></Cell>
+    <Cell ss:StyleID="sData"></Cell>
+   </Row>
+  </Table>
+ </Worksheet>`;
+
+      // 3. INCOME SHEET
+      xml += `
+ <Worksheet ss:Name="Income">
+  <Table ss:DefaultColumnWidth="110" ss:DefaultRowHeight="20">
+   <Column ss:Width="90"/>
+   <Column ss:Width="140"/>
+   <Column ss:Width="240"/>
+   <Column ss:Width="120"/>
+   <Column ss:Width="110"/>
+   <Row ss:Height="26">
+    <Cell ss:MergeAcross="4" ss:StyleID="sTitle"><Data ss:Type="String">Income &amp; Cash Flow Records</Data></Cell>
+   </Row>
+   <Row ss:Height="20">
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Date</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Source / Category</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Description</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Amount (₹)</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Payment Method</Data></Cell>
+   </Row>`;
+
+      income.forEach(i => {
+        xml += `
+   <Row>
+    <Cell ss:StyleID="sDataCenter"><Data ss:Type="String">${escapeXml(i.date)}</Data></Cell>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">${escapeXml(i.src || 'Salary')}</Data></Cell>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">${escapeXml(i.desc || '')}</Data></Cell>
+    <Cell ss:StyleID="sCurrencyPos"><Data ss:Type="Number">${(parseFloat(i.amt) || 0).toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sDataCenter"><Data ss:Type="String">${escapeXml(i.method || 'Bank Transfer')}</Data></Cell>
+   </Row>`;
+      });
+
+      xml += `
+   <Row ss:Height="22">
+    <Cell ss:StyleID="sHeader" ss:MergeAcross="2"><Data ss:Type="String">TOTAL INCOME</Data></Cell>
+    <Cell ss:StyleID="sCurrencyBold"><Data ss:Type="Number">${totalInc.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sDataCenter"><Data ss:Type="String">${income.length} Records</Data></Cell>
+   </Row>
+  </Table>
+ </Worksheet>`;
+
+      // 4. SAVINGS & INVESTMENTS SHEET
+      xml += `
+ <Worksheet ss:Name="Savings &amp; Investments">
+  <Table ss:DefaultColumnWidth="110" ss:DefaultRowHeight="20">
+   <Column ss:Width="160"/>
+   <Column ss:Width="120"/>
+   <Column ss:Width="90"/>
+   <Column ss:Width="120"/>
+   <Column ss:Width="70"/>
+   <Column ss:Width="90"/>
+   <Column ss:Width="120"/>
+   <Column ss:Width="110"/>
+   <Row ss:Height="26">
+    <Cell ss:MergeAcross="7" ss:StyleID="sTitle"><Data ss:Type="String">Savings, Fixed Deposits &amp; Mutual Funds</Data></Cell>
+   </Row>
+   <Row ss:Height="20">
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Investment Name</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Category</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Start Date</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Principal (₹)</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Rate (%)</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Mode</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Current Value (₹)</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Gain / Profit (₹)</Data></Cell>
+   </Row>`;
+
+      savings.forEach(s => {
+        xml += `
+   <Row>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">${escapeXml(s.name)}</Data></Cell>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">${escapeXml(s.cat)}</Data></Cell>
+    <Cell ss:StyleID="sDataCenter"><Data ss:Type="String">${escapeXml(s.date)}</Data></Cell>
+    <Cell ss:StyleID="sCurrency"><Data ss:Type="Number">${(parseFloat(s.principal) || 0).toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sDataCenter"><Data ss:Type="Number">${parseFloat(s.rate) || 0}</Data></Cell>
+    <Cell ss:StyleID="sDataCenter"><Data ss:Type="String">${escapeXml(s.type || 'Compound')}</Data></Cell>
+    <Cell ss:StyleID="sCurrency"><Data ss:Type="Number">${(parseFloat(s.current) || 0).toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sCurrencyPos"><Data ss:Type="Number">${(parseFloat(s.gain) || 0).toFixed(2)}</Data></Cell>
+   </Row>`;
+      });
+
+      xml += `
+   <Row ss:Height="22">
+    <Cell ss:StyleID="sHeader" ss:MergeAcross="2"><Data ss:Type="String">TOTAL SAVINGS</Data></Cell>
+    <Cell ss:StyleID="sCurrencyBold"><Data ss:Type="Number">${totalSavingsPrincipal.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sDataCenter"></Cell>
+    <Cell ss:StyleID="sDataCenter"></Cell>
+    <Cell ss:StyleID="sCurrencyBold"><Data ss:Type="Number">${totalSavingsCurrent.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sCurrencyBold"><Data ss:Type="Number">${totalSavingsGains.toFixed(2)}</Data></Cell>
+   </Row>
+  </Table>
+ </Worksheet>`;
+
+      // 5. STOCK PORTFOLIO SHEET
+      xml += `
+ <Worksheet ss:Name="Stock Portfolio">
+  <Table ss:DefaultColumnWidth="110" ss:DefaultRowHeight="20">
+   <Column ss:Width="140"/>
+   <Column ss:Width="90"/>
+   <Column ss:Width="70"/>
+   <Column ss:Width="110"/>
+   <Column ss:Width="110"/>
+   <Column ss:Width="120"/>
+   <Column ss:Width="120"/>
+   <Column ss:Width="110"/>
+   <Column ss:Width="80"/>
+   <Row ss:Height="26">
+    <Cell ss:MergeAcross="8" ss:StyleID="sTitle"><Data ss:Type="String">Stock &amp; Equity Holdings</Data></Cell>
+   </Row>
+   <Row ss:Height="20">
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Ticker / Stock</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Buy Date</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Shares</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Avg Price (₹)</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Market Price (₹)</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Invested Cost (₹)</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Current Value (₹)</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">P&amp;L Gain/Loss (₹)</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Return %</Data></Cell>
+   </Row>`;
+
+      stocks.forEach(st => {
+        const cost = (parseFloat(st.shares) || 0) * (parseFloat(st.avgPrice) || 0);
+        const val = (parseFloat(st.shares) || 0) * (parseFloat(st.current) || 0);
+        const gain = val - cost;
+        const retPct = cost > 0 ? (gain / cost) : 0;
+        xml += `
+   <Row>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">${escapeXml(st.ticker)}</Data></Cell>
+    <Cell ss:StyleID="sDataCenter"><Data ss:Type="String">${escapeXml(st.date || '')}</Data></Cell>
+    <Cell ss:StyleID="sDataCenter"><Data ss:Type="Number">${st.shares || 0}</Data></Cell>
+    <Cell ss:StyleID="sCurrency"><Data ss:Type="Number">${(parseFloat(st.avgPrice) || 0).toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sCurrency"><Data ss:Type="Number">${(parseFloat(st.current) || 0).toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sCurrency"><Data ss:Type="Number">${cost.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sCurrency"><Data ss:Type="Number">${val.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="${gain >= 0 ? 'sCurrencyPos' : 'sCurrencyNeg'}"><Data ss:Type="Number">${gain.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sPercent"><Data ss:Type="Number">${retPct.toFixed(4)}</Data></Cell>
+   </Row>`;
+      });
+
+      xml += `
+   <Row ss:Height="22">
+    <Cell ss:StyleID="sHeader" ss:MergeAcross="4"><Data ss:Type="String">PORTFOLIO TOTAL</Data></Cell>
+    <Cell ss:StyleID="sCurrencyBold"><Data ss:Type="Number">${totalStockCost.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sCurrencyBold"><Data ss:Type="Number">${totalStockVal.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="${totalStockGain >= 0 ? 'sCurrencyPos' : 'sCurrencyNeg'}"><Data ss:Type="Number">${totalStockGain.toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sPercent"><Data ss:Type="Number">${(totalStockCost > 0 ? totalStockGain / totalStockCost : 0).toFixed(4)}</Data></Cell>
+   </Row>
+  </Table>
+ </Worksheet>`;
+
+      // 6. BUDGETS & GOALS SHEET
+      xml += `
+ <Worksheet ss:Name="Budgets &amp; Goals">
+  <Table ss:DefaultColumnWidth="120" ss:DefaultRowHeight="20">
+   <Column ss:Width="160"/>
+   <Column ss:Width="120"/>
+   <Column ss:Width="120"/>
+   <Column ss:Width="140"/>
+   <Row ss:Height="26">
+    <Cell ss:MergeAcross="3" ss:StyleID="sTitle"><Data ss:Type="String">Monthly Budgets</Data></Cell>
+   </Row>
+   <Row ss:Height="20">
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Category</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Monthly Budget (₹)</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Status</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Notes</Data></Cell>
+   </Row>`;
+
+      budgets.forEach(b => {
+        xml += `
+   <Row>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">${escapeXml(b.category)}</Data></Cell>
+    <Cell ss:StyleID="sCurrency"><Data ss:Type="Number">${(parseFloat(b.monthly) || 0).toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sDataCenter"><Data ss:Type="String">Active</Data></Cell>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">Monthly Limit</Data></Cell>
+   </Row>`;
+      });
+
+      xml += `
+   <Row ss:Height="16"></Row>
+   <Row ss:Height="26">
+    <Cell ss:MergeAcross="3" ss:StyleID="sTitle"><Data ss:Type="String">Savings Goals</Data></Cell>
+   </Row>
+   <Row ss:Height="20">
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Goal Name</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Target Amount (₹)</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Target Date</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Category</Data></Cell>
+   </Row>`;
+
+      goals.forEach(g => {
+        xml += `
+   <Row>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">${escapeXml(g.name)}</Data></Cell>
+    <Cell ss:StyleID="sCurrency"><Data ss:Type="Number">${(parseFloat(g.target) || 0).toFixed(2)}</Data></Cell>
+    <Cell ss:StyleID="sDataCenter"><Data ss:Type="String">${escapeXml(g.targetDate || '')}</Data></Cell>
+    <Cell ss:StyleID="sData"><Data ss:Type="String">${escapeXml(g.cat || 'Savings')}</Data></Cell>
+   </Row>`;
+      });
+
+      xml += `
+  </Table>
+ </Worksheet>
+</Workbook>`;
+
+      return xml;
+    }
+
+    function generateCsvReport(data, userName, periodLabel) {
+      const { expenses = [], income = [], savings = [], stocks = [], budgets = [], goals = [] } = data;
+
+      const totalExp = expenses.reduce((sum, e) => sum + (parseFloat(e.amt) || 0), 0);
+      const totalInc = income.reduce((sum, i) => sum + (parseFloat(i.amt) || 0), 0);
+      const totalSavingsCurrent = savings.reduce((sum, s) => sum + (parseFloat(s.current) || 0), 0);
+      const totalStockVal = stocks.reduce((sum, st) => sum + (parseFloat(st.shares || 0) * parseFloat(st.current || 0)), 0);
+      const availableCash = totalInc - totalExp;
+      const netWorth = availableCash + totalSavingsCurrent + totalStockVal;
+
+      let csv = `NutriFin Financial Statement\n`;
+      csv += `User,${userName}\nPeriod,${periodLabel}\nGenerated Date,${new Date().toISOString().split('T')[0]}\n\n`;
+
+      csv += `EXECUTIVE SUMMARY\n`;
+      csv += `Metric,Amount (INR)\n`;
+      csv += `Total Income,${totalInc.toFixed(2)}\n`;
+      csv += `Total Expenses,${totalExp.toFixed(2)}\n`;
+      csv += `Available Liquid Cash,${availableCash.toFixed(2)}\n`;
+      csv += `Savings & Fixed Deposits Current Value,${totalSavingsCurrent.toFixed(2)}\n`;
+      csv += `Stock Portfolio Current Value,${totalStockVal.toFixed(2)}\n`;
+      csv += `Estimated Net Worth,${netWorth.toFixed(2)}\n\n`;
+
+      csv += `DETAILED EXPENSES\n`;
+      csv += `Date,Category,Description,Amount (INR),Payment Method,Tags\n`;
+      expenses.forEach(e => {
+        csv += `"${e.date}","${(e.cat || '').replace(/"/g, '""')}","${(e.desc || '').replace(/"/g, '""')}",${(parseFloat(e.amt) || 0).toFixed(2)},"${(e.method || 'Cash').replace(/"/g, '""')}","${(Array.isArray(e.tags) ? e.tags.join(';') : (e.tags || '')).replace(/"/g, '""')}"\n`;
+      });
+      csv += `\n`;
+
+      csv += `INCOME & SALARY\n`;
+      csv += `Date,Source,Description,Amount (INR),Payment Method\n`;
+      income.forEach(i => {
+        csv += `"${i.date}","${(i.src || '').replace(/"/g, '""')}","${(i.desc || '').replace(/"/g, '""')}",${(parseFloat(i.amt) || 0).toFixed(2)},"${(i.method || 'Bank').replace(/"/g, '""')}"\n`;
+      });
+      csv += `\n`;
+
+      csv += `SAVINGS & INVESTMENTS\n`;
+      csv += `Name,Category,Date,Principal (INR),Rate (%),Type,Current Value (INR),Gain (INR)\n`;
+      savings.forEach(s => {
+        csv += `"${(s.name || '').replace(/"/g, '""')}","${(s.cat || '').replace(/"/g, '""')}","${s.date}",${(parseFloat(s.principal) || 0).toFixed(2)},${s.rate || 0},"${s.type || 'Compound'}",${(parseFloat(s.current) || 0).toFixed(2)},${(parseFloat(s.gain) || 0).toFixed(2)}\n`;
+      });
+      csv += `\n`;
+
+      csv += `STOCK PORTFOLIO\n`;
+      csv += `Ticker,Date,Shares,Avg Buy Price (INR),Current Price (INR),Invested Cost (INR),Current Value (INR),Gain/Loss (INR)\n`;
+      stocks.forEach(st => {
+        const cost = (parseFloat(st.shares) || 0) * (parseFloat(st.avgPrice) || 0);
+        const val = (parseFloat(st.shares) || 0) * (parseFloat(st.current) || 0);
+        const gain = val - cost;
+        csv += `"${(st.ticker || '').replace(/"/g, '""')}","${st.date || ''}",${st.shares || 0},${(parseFloat(st.avgPrice) || 0).toFixed(2)},${(parseFloat(st.current) || 0).toFixed(2)},${cost.toFixed(2)},${val.toFixed(2)},${gain.toFixed(2)}\n`;
+      });
+      csv += `\n`;
+
+      csv += `BUDGETS & GOALS\n`;
+      csv += `Type,Name/Category,Target/Monthly Limit (INR),Notes\n`;
+      budgets.forEach(b => {
+        csv += `"Budget","${(b.category || '').replace(/"/g, '""')}",${(parseFloat(b.monthly) || 0).toFixed(2)},"Monthly Budget"\n`;
+      });
+      goals.forEach(g => {
+        csv += `"Goal","${(g.name || '').replace(/"/g, '""')}",${(parseFloat(g.target) || 0).toFixed(2)},"Target Date: ${g.targetDate || ''}"\n`;
+      });
+
+      return csv;
+    }
+
+    function executeReportExport() {
+      const scopeEl = document.querySelector('input[name="exportScope"]:checked');
+      const scope = scopeEl ? scopeEl.value : 'all';
+
+      const formatEl = document.querySelector('input[name="exportFormat"]:checked');
+      const format = formatEl ? formatEl.value : 'excel';
+
+      const expenses = getExpensesForScope(scope);
+      const income = getIncomeForScope(scope);
+      const savings = loadSavings();
+      const stocks = loadStocks();
+      const budgets = loadBudgets();
+      const goals = loadGoals();
+
+      const userName = (currentUser && currentUser.name) ? currentUser.name : ((currentUser && currentUser.userId) ? currentUser.userId : 'Jithu');
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+
+      let scopeLabel = 'All_Time';
+      let displayScopeLabel = 'All Time';
+      if (scope === 'year') {
+        scopeLabel = `${now.getFullYear()}_Year`;
+        displayScopeLabel = `${now.getFullYear()} Full Year`;
+      } else if (scope === 'month') {
+        const range = getDateRange();
+        scopeLabel = (range.label || 'Active_Month').replace(/[^a-zA-Z0-9_-]/g, '_');
+        displayScopeLabel = range.label || 'Active Month';
+      }
+
+      if (format === 'excel') {
+        const xml = generateExcelWorkbookReport({ expenses, income, savings, stocks, budgets, goals }, userName, displayScopeLabel);
+        const filename = `NutriFin_${userName}_Report_${scopeLabel}_${dateStr}.xls`;
+        downloadBlobFile(xml, 'application/vnd.ms-excel;charset=utf-8', filename);
+        showNotification('📊 Excel report downloaded successfully to your device!', 'success', 3500);
+      } else {
+        const csv = generateCsvReport({ expenses, income, savings, stocks, budgets, goals }, userName, displayScopeLabel);
+        const filename = `NutriFin_${userName}_Report_${scopeLabel}_${dateStr}.csv`;
+        downloadBlobFile(csv, 'text/csv;charset=utf-8', filename);
+        showNotification('📄 CSV report downloaded successfully to your device!', 'success', 3500);
+      }
+
+      closeExportReportModal();
     }
 
     /* ================= CSV IMPORT/EXPORT ================= */
