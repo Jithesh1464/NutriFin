@@ -570,6 +570,46 @@ async function handleReportDelivery(request, env) {
 
 /* ================= SYNC & DATA HANDLERS ================= */
 
+async function saveUserDataRow(db, userId, dataType, dataStr) {
+  const existing = await db
+    .prepare('SELECT id FROM user_data WHERE user_id = ? AND data_type = ? LIMIT 1')
+    .bind(userId, dataType)
+    .first();
+
+  if (existing) {
+    try {
+      await db
+        .prepare('UPDATE user_data SET data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND data_type = ?')
+        .bind(dataStr, userId, dataType)
+        .run();
+    } catch (e) {
+      await db
+        .prepare('UPDATE user_data SET data = ? WHERE user_id = ? AND data_type = ?')
+        .bind(dataStr, userId, dataType)
+        .run();
+    }
+  } else {
+    try {
+      await db
+        .prepare('INSERT INTO user_data (user_id, data_type, data, created_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)')
+        .bind(userId, dataType, dataStr)
+        .run();
+    } catch (e1) {
+      try {
+        await db
+          .prepare('INSERT INTO user_data (user_id, data_type, data, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)')
+          .bind(userId, dataType, dataStr)
+          .run();
+      } catch (e2) {
+        await db
+          .prepare('INSERT INTO user_data (user_id, data_type, data) VALUES (?, ?, ?)')
+          .bind(userId, dataType, dataStr)
+          .run();
+      }
+    }
+  }
+}
+
 async function handleSync(request, env) {
   const db = getDb(env);
   if (!db) return json({ error: 'Database not configured' }, 500);
@@ -586,7 +626,7 @@ async function handleSync(request, env) {
       return json({ error: 'dataType and data required' }, 400);
     }
 
-    const validTypes = ['expenses', 'income', 'savings', 'stocks', 'settings', 'notifications', 'budgets', 'recurring', 'goals', 'goalContributions', 'profile'];
+    const validTypes = ['expenses', 'income', 'savings', 'stocks', 'settings', 'notifications', 'budgets', 'recurring', 'goals', 'goalContributions', 'profile', 'deleted_expenses', 'deleted_income', 'deleted_savings', 'deleted_stocks', 'deleted_recurring', 'deleted_goals'];
     if (!validTypes.includes(dataType)) {
       return json({ error: 'Invalid dataType' }, 400);
     }
@@ -595,6 +635,37 @@ async function handleSync(request, env) {
       .prepare('SELECT id, data FROM user_data WHERE user_id = ? AND data_type = ? LIMIT 1')
       .bind(userId, dataType)
       .first();
+
+    // 1. Maintain persistent server-side tombstones for deleted IDs
+    const delType = `deleted_${dataType}`;
+    const delSet = new Set(Array.isArray(deletedIds) ? deletedIds.map(String) : []);
+
+    try {
+      const existingDel = await db
+        .prepare('SELECT data FROM user_data WHERE user_id = ? AND data_type = ? LIMIT 1')
+        .bind(userId, delType)
+        .first();
+
+      let currentDelList = [];
+      if (existingDel && existingDel.data) {
+        try {
+          const parsed = JSON.parse(existingDel.data);
+          if (Array.isArray(parsed)) currentDelList = parsed;
+        } catch(e) {}
+      }
+
+      // Add any previously stored deleted IDs
+      currentDelList.forEach(id => delSet.add(String(id)));
+
+      // If new deletedIds arrived, persist updated tombstone list to D1
+      if (Array.isArray(deletedIds) && deletedIds.length > 0) {
+        const mergedDelList = Array.from(delSet);
+        const delStr = JSON.stringify(mergedDelList);
+        await saveUserDataRow(db, userId, delType, delStr);
+      }
+    } catch (delErr) {
+      console.warn('Tombstone handling warning:', delErr.message);
+    }
 
     let finalData = data;
 
@@ -619,7 +690,6 @@ async function handleSync(request, env) {
         try {
           const existingArray = JSON.parse(existing.data);
           if (Array.isArray(existingArray) && existingArray.length > 0) {
-            const delSet = new Set(Array.isArray(deletedIds) ? deletedIds.map(String) : []);
             const map = new Map();
 
             // First add existing remote items (excluding deliberately deleted IDs)
@@ -628,6 +698,7 @@ async function handleSync(request, env) {
               const id = item.id !== undefined && item.id !== null ? String(item.id) : null;
               if (id && delSet.has(id)) return; // Deliberately deleted
               const key = id || `${item.date || ''}_${item.desc || item.cat || item.name || ''}_${item.amt || item.principal || ''}`;
+              if (delSet.has(key)) return;
               map.set(key, item);
             });
 
@@ -637,6 +708,7 @@ async function handleSync(request, env) {
               const id = item.id !== undefined && item.id !== null ? String(item.id) : null;
               if (id && delSet.has(id)) return;
               const key = id || `${item.date || ''}_${item.desc || item.cat || item.name || ''}_${item.amt || item.principal || ''}`;
+              if (delSet.has(key)) return;
               if (map.has(key)) {
                 map.set(key, { ...map.get(key), ...item });
               } else {
@@ -652,40 +724,21 @@ async function handleSync(request, env) {
       }
     }
 
+    // Guarantee that tombstoned items are pruned even if sent with forceOverwrite
+    if (Array.isArray(finalData)) {
+      finalData = finalData.filter(item => {
+        if (!item) return false;
+        const id = item.id !== undefined && item.id !== null ? String(item.id) : null;
+        if (id && delSet.has(id)) return false;
+        const key = `${item.date || ''}_${item.desc || item.cat || item.name || ''}_${item.amt || item.principal || ''}`;
+        if (delSet.has(key)) return false;
+        return true;
+      });
+    }
+
     const dataStr = JSON.stringify(finalData);
 
-    if (existing) {
-      try {
-        await db
-          .prepare('UPDATE user_data SET data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND data_type = ?')
-          .bind(dataStr, userId, dataType)
-          .run();
-      } catch (err) {
-        await db
-          .prepare('UPDATE user_data SET data = ? WHERE user_id = ? AND data_type = ?')
-          .bind(dataStr, userId, dataType)
-          .run();
-      }
-    } else {
-      try {
-        await db
-          .prepare('INSERT INTO user_data (user_id, data_type, data, created_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)')
-          .bind(userId, dataType, dataStr)
-          .run();
-      } catch (insertErr) {
-        try {
-          await db
-            .prepare('INSERT INTO user_data (user_id, data_type, data, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)')
-            .bind(userId, dataType, dataStr)
-            .run();
-        } catch (insertErr2) {
-          await db
-            .prepare('INSERT INTO user_data (user_id, data_type, data) VALUES (?, ?, ?)')
-            .bind(userId, dataType, dataStr)
-            .run();
-        }
-      }
-    }
+    await saveUserDataRow(db, userId, dataType, dataStr);
 
     const itemCount = Array.isArray(finalData) ? finalData.length : (typeof finalData === 'object' && finalData ? Object.keys(finalData).length : 1);
     return json({ success: true, message: 'Data synced safely', dataType, itemCount, data: finalData }, 200);

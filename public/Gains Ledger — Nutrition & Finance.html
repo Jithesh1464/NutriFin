@@ -7362,17 +7362,18 @@
     }
 
     /* ================= CLOUDFLARE WORKER / D1 SYNC ================= */
-    async function syncToCloudflare(dataType, data, forceOverwrite = false) {
+    async function syncToCloudflare(dataType, data, forceOverwrite = false, extraDeletedIds = []) {
       if (!authToken || authToken === 'offline-token' || !currentUser) return false;
 
       try {
-        const deletedIds = getDeletedIds(dataType);
+        const localDeleted = getDeletedIds(dataType);
+        const combinedDeleted = Array.from(new Set([...localDeleted, ...(extraDeletedIds || []).map(String)]));
         const isForce = forceOverwrite || (Array.isArray(data) && data.length === 0);
         const payload = {
           action: 'sync',
           dataType,
           data,
-          deletedIds,
+          deletedIds: combinedDeleted,
           forceOverwrite: isForce,
           userId: currentUser.userId,
           timestamp: Date.now()
@@ -7393,11 +7394,7 @@
         }
 
         const result = await response.json();
-        if (result && result.success === true) {
-          clearDeletedIds(dataType, deletedIds);
-          return true;
-        }
-        return false;
+        return !!(result && result.success === true);
       } catch (e) {
         console.error('❌ Sync fetch error:', e.message);
         return false;
@@ -7843,8 +7840,21 @@
       document.querySelectorAll(".navtabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
       document.getElementById("tab-diet").classList.toggle("active", name === "diet");
       document.getElementById("tab-fin").classList.toggle("active", name === "fin");
+
+      // 1. Immediately render from local memory for instant zero-lag response
       if (name === "fin") renderFinance();
       if (name === "diet") renderWorkoutLibrary();
+
+      // 2. Automatically refresh from Cloud DB in background if online
+      if (navigator.onLine && authToken && authToken !== 'offline-token' && isInitialCloudSyncDone) {
+        loadUserDataFromCloudflare().then((hasChanges) => {
+          if (hasChanges) {
+            console.log('🔄 Data updated from Cloud DB on tab switch');
+            if (name === "fin") renderFinance();
+            if (name === "diet") renderWorkoutLibrary();
+          }
+        }).catch(err => console.log('Background tab sync skipped:', err));
+      }
     }
 
     /* ================= NUTRITION DATA (unchanged engine) ================= */
@@ -8352,28 +8362,36 @@
     }
     function getDeletedIds(type) {
       try {
-        return JSON.parse(localStorage.getItem(getDeletedIdsStorageKey(type)) || "[]");
+        const raw = localStorage.getItem(getDeletedIdsStorageKey(type));
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        const now = Date.now();
+        // Keep tombstones for 14 days so stale cloud fetches never resurrect deleted items
+        const valid = parsed.filter(item => {
+          if (typeof item === 'object' && item && item.timestamp) {
+            return (now - item.timestamp) < (14 * 24 * 60 * 60 * 1000);
+          }
+          return true;
+        });
+        return valid.map(item => typeof item === 'object' && item ? String(item.id) : String(item));
       } catch (e) { return []; }
     }
     function markIdDeleted(type, id) {
       if (id === undefined || id === null) return;
       try {
         const idStr = String(id);
-        const list = getDeletedIds(type);
-        if (!list.includes(idStr)) {
-          list.push(idStr);
+        const raw = localStorage.getItem(getDeletedIdsStorageKey(type));
+        let list = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(list)) list = [];
+        const existingIdx = list.findIndex(item => (typeof item === 'object' ? String(item.id) : String(item)) === idStr);
+        if (existingIdx === -1) {
+          list.push({ id: idStr, timestamp: Date.now() });
           localStorage.setItem(getDeletedIdsStorageKey(type), JSON.stringify(list));
         }
       } catch (e) {}
     }
     function clearDeletedIds(type, idsToClear) {
-      try {
-        if (!idsToClear || idsToClear.length === 0) return;
-        const toClearSet = new Set(idsToClear.map(String));
-        const current = getDeletedIds(type);
-        const updated = current.filter(id => !toClearSet.has(String(id)));
-        localStorage.setItem(getDeletedIdsStorageKey(type), JSON.stringify(updated));
-      } catch (e) {}
+      // Kept for interface compatibility; tombstones persist for 14 days to prevent resurrection
     }
 
     function mergeItemArrays(localItems, remoteItems, deletedIds = []) {
@@ -8583,7 +8601,15 @@
       document.getElementById("incomeEditModal").classList.add("show");
     }
     function closeIncomeModal() { document.getElementById("incomeEditModal").classList.remove("show"); }
-    function delIncome(id) { markIdDeleted('income', id); const inc = loadIncome().filter(i => String(i.id) !== String(id)); saveIncome(inc); renderFinance(); }
+    function delIncome(id) {
+      markIdDeleted('income', id);
+      const inc = loadIncome().filter(i => String(i.id) !== String(id));
+      saveIncome(inc);
+      renderFinance();
+      syncToCloudflare('income', inc, true, [id]).then(() => {
+        console.log('✅ Income deletion synced to DB');
+      }).catch(err => console.warn('Income delete sync warning:', err));
+    }
     function renderIncomeTagChips() {
       const container = document.getElementById("incEditTagsContainer");
       container.innerHTML = window.incomeEditTags.map(t => `<span class="tag-chip">${t} <button style="background:none; border:none; color:inherit; cursor:pointer; margin-left:4px" onclick="removeIncomeTag('${t}')">×</button></span>`).join("");
@@ -8652,7 +8678,15 @@
       closeExpenseModal();
       renderFinance();
     }
-    function delExpense(id) { markIdDeleted('expenses', id); const exp = loadExpenses().filter(e => String(e.id) !== String(id)); saveExpenses(exp); renderFinance(); }
+    function delExpense(id) {
+      markIdDeleted('expenses', id);
+      const exp = loadExpenses().filter(e => String(e.id) !== String(id));
+      saveExpenses(exp);
+      renderFinance();
+      syncToCloudflare('expenses', exp, true, [id]).then(() => {
+        console.log('✅ Expense deletion synced to DB');
+      }).catch(err => console.warn('Expense delete sync warning:', err));
+    }
     function editExpense(id) {
       const exp = loadExpenses().find(e => e.id === id);
       if (!exp) return;
@@ -8803,7 +8837,15 @@
       closeSavingsModal();
       renderFinance();
     }
-    function delSavings(id) { markIdDeleted('savings', id); const sav = loadSavings().filter(s => String(s.id) !== String(id)); saveSavings(sav); renderFinance(); }
+    function delSavings(id) {
+      markIdDeleted('savings', id);
+      const sav = loadSavings().filter(s => String(s.id) !== String(id));
+      saveSavings(sav);
+      renderFinance();
+      syncToCloudflare('savings', sav, true, [id]).then(() => {
+        console.log('✅ Savings deletion synced to DB');
+      }).catch(err => console.warn('Savings delete sync warning:', err));
+    }
     function editStock(id) {
       const st = loadStocks().find(s => s.id === id);
       if (!st) return;
@@ -8931,9 +8973,13 @@
         markIdDeleted('expenses', linkedExp.id);
         const updatedExp = exp.filter(e => String(e.fromStock) !== String(id));
         saveExpenses(updatedExp);
+        syncToCloudflare('expenses', updatedExp, true, [linkedExp.id]).catch(() => {});
       }
 
       renderFinance();
+      syncToCloudflare('stocks', st, true, [id]).then(() => {
+        console.log('✅ Stock deletion synced to DB');
+      }).catch(err => console.warn('Stock delete sync warning:', err));
     }
     function showBarTooltip(el) { const title = el.getAttribute('title'); if (title) alert(title); }
     const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -10627,6 +10673,9 @@
 
       renderFinance();
       showNotification('Recurring transaction deleted', 'info', 2000);
+      syncToCloudflare('recurring', recurring, true, [id]).catch(() => {});
+      syncToCloudflare('expenses', expenses, true).catch(() => {});
+      syncToCloudflare('income', income, true).catch(() => {});
     }
 
     /* ================= GOALS MODAL FUNCTIONS ================= */
@@ -10700,6 +10749,7 @@
       }
       renderFinance();
       showNotification('Goal deleted', 'success', 2000);
+      syncToCloudflare('goals', goals, true, [id]).catch(() => {});
     }
 
     /* ================= CSV IMPORT/EXPORT ================= */
@@ -10848,7 +10898,7 @@
     }
 
     async function loadUserDataFromCloudflare() {
-      if (!currentUser || !authToken || authToken === 'offline-token') return;
+      if (!currentUser || !authToken || authToken === 'offline-token') return false;
 
       const typeMap = {
         expenses: 'finExpenses',
@@ -10862,6 +10912,7 @@
       };
 
       let fetchedAny = false;
+      let hasChanges = false;
 
       // 1. First attempt fast single-request bulk download from /api/data
       try {
@@ -10876,6 +10927,14 @@
         if (response.ok) {
           const res = await response.json();
           if (res && res.data && typeof res.data === 'object') {
+            // 1. Ingest any remote deleted tombstones so this device knows what was deleted elsewhere
+            for (const [k, v] of Object.entries(res.data)) {
+              if (k.startsWith('deleted_') && Array.isArray(v)) {
+                const collType = k.replace('deleted_', '');
+                v.forEach(delId => markIdDeleted(collType, delId));
+              }
+            }
+
             for (const [dataType, localKey] of Object.entries(typeMap)) {
               const remoteVal = res.data[dataType];
               if (remoteVal !== undefined && remoteVal !== null) {
@@ -10898,7 +10957,11 @@
                   mergedVal = { ...currentLocalObj, ...remoteVal };
                 }
 
-                localStorage.setItem(storageKey, JSON.stringify(mergedVal));
+                const newStr = JSON.stringify(mergedVal);
+                if (newStr !== currentLocal) {
+                  hasChanges = true;
+                }
+                localStorage.setItem(storageKey, newStr);
                 fetchedAny = true;
               }
             }
@@ -11273,14 +11336,54 @@
     }
 
 
-    // Flush offline sync queue when internet returns
+    // Auto-sync when internet reconnects or tab becomes active
     window.addEventListener('online', () => {
-      console.log('🌐 Back online — flushing sync queue and syncing with Cloudflare D1...');
+      console.log('🌐 Back online — synchronizing with Cloud DB...');
       if (authToken && authToken !== 'offline-token') {
         if (syncQueue.length > 0) processSyncQueue();
-        syncAllLocalDataToCloudflare();
+        loadUserDataFromCloudflare().then((hasChanges) => {
+          renderFinance();
+          renderWorkoutLibrary();
+          showNotification('🌐 Back online — Synced with Cloud DB!', 'success', 2500);
+        }).catch(() => {
+          syncAllLocalDataToCloudflare(false);
+        });
       }
     });
+
+    // Auto-sync when user returns to app/tab (tab switched, app un-minimized, phone unlocked)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && navigator.onLine && authToken && authToken !== 'offline-token' && isInitialCloudSyncDone) {
+        loadUserDataFromCloudflare().then((hasChanges) => {
+          if (hasChanges) {
+            renderFinance();
+            renderWorkoutLibrary();
+          }
+        }).catch(() => {});
+      }
+    });
+    window.addEventListener('focus', () => {
+      if (navigator.onLine && authToken && authToken !== 'offline-token' && isInitialCloudSyncDone) {
+        loadUserDataFromCloudflare().then((hasChanges) => {
+          if (hasChanges) {
+            renderFinance();
+            renderWorkoutLibrary();
+          }
+        }).catch(() => {});
+      }
+    });
+
+    // Background live polling: check Cloud DB every 25 seconds for changes from other devices
+    setInterval(() => {
+      if (navigator.onLine && authToken && authToken !== 'offline-token' && isInitialCloudSyncDone && !isSyncing) {
+        loadUserDataFromCloudflare().then((hasChanges) => {
+          if (hasChanges) {
+            renderFinance();
+            renderWorkoutLibrary();
+          }
+        }).catch(() => {});
+      }
+    }, 25000);
 
     // Initialize auth
     checkAuthStatus();
