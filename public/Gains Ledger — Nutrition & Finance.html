@@ -1357,13 +1357,82 @@
 
     .donut-segment {
       cursor: pointer;
-      transition: all .2s ease;
+      transition: all .25s cubic-bezier(0.4, 0, 0.2, 1);
       filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))
     }
 
     .donut-segment:hover {
-      transform: scale(1.05) translate(0, -1px);
-      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5))
+      transform: scale(1.06) translate(0, -1.5px);
+      filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.6))
+    }
+
+    .donut-segment.active {
+      stroke: #ffffff !important;
+      stroke-width: 2.5px !important;
+      filter: drop-shadow(0 0 10px var(--accent)) drop-shadow(0 4px 14px rgba(0,0,0,0.7)) !important;
+      transform: scale(1.07) translate(0, -2px);
+    }
+
+    .donut-segment.dimmed {
+      opacity: 0.32;
+      filter: grayscale(40%) opacity(0.45);
+    }
+
+    .donut-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      word-break: break-word;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all .2s ease;
+      border: 1px solid transparent;
+    }
+
+    .donut-legend-item:hover {
+      background: rgba(255, 255, 255, 0.07);
+      transform: translateX(3px);
+    }
+
+    .donut-legend-item.active {
+      background: rgba(195, 255, 77, 0.14);
+      border-color: rgba(195, 255, 77, 0.45);
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .donut-legend-item.dimmed {
+      opacity: 0.38;
+    }
+
+    .btn-clear-filter {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(255, 75, 75, 0.14);
+      color: #ff6b6b;
+      border: 1px solid rgba(255, 75, 75, 0.35);
+      border-radius: 10px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin: 0;
+    }
+
+    .btn-clear-filter:hover {
+      background: rgba(255, 75, 75, 0.26);
+      border-color: #ff6b6b;
+      color: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 75, 75, 0.28);
+    }
+
+    .btn-clear-filter:active {
+      transform: translateY(0);
     }
 
     .donut-center-text {
@@ -6862,8 +6931,22 @@
         <div class="txlist" id="incomeList" style="max-height:300px"></div>
       </div>
 
-      <div class="panel-box">
-        <h3>Detailed Expenses <button class="btn-add" style="margin:0" onclick="addExpense()">+ Add</button></h3>
+      <div class="panel-box" id="detailedExpensesPanel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">
+            <h3 style="margin:0">Detailed Expenses</h3>
+            <span id="expenseCategoryFilterBadge" style="display:none; align-items:center; gap:6px; background:rgba(195,255,77,0.12); border:1px solid rgba(195,255,77,0.3); color:var(--accent); font-size:11px; font-weight:700; padding:3px 10px; border-radius:12px">
+              <span id="expenseCategoryFilterBadgeText">Food</span>
+            </span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px">
+            <button id="clearExpenseCategoryFilterBtn" class="btn-clear-filter" onclick="clearExpenseCategoryFilter()" style="display:none" title="Clear category filter">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              <span>Clear Filter</span>
+            </button>
+            <button class="btn-add" style="margin:0" onclick="addExpense()">+ Add</button>
+          </div>
+        </div>
         <div class="txlist" id="expenseList" style="max-height:300px"></div>
       </div>
 
@@ -8448,9 +8531,39 @@
       return "₹" + ((n / 1000000000000).toFixed(1)).replace(/\.0$/, "") + "T";
     }
     const DONUT_COLORS = ["#c3ff4d", "#5fc9ff", "#ff7a7a", "#ffb864", "#c88cff", "#4ddbc0", "#ffaa44", "#88cc88", "#ff99dd", "#44ddff"];
+    window.selectedExpenseCategory = null;
+
+    function handleExpenseCategoryClick(category, event) {
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      if (!category) return;
+
+      if (window.selectedExpenseCategory && String(window.selectedExpenseCategory).toLowerCase() === String(category).toLowerCase()) {
+        window.selectedExpenseCategory = null;
+      } else {
+        window.selectedExpenseCategory = category;
+      }
+      renderFinance();
+
+      if (window.selectedExpenseCategory) {
+        const el = document.getElementById("detailedExpensesPanel");
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+    }
+
+    function clearExpenseCategoryFilter() {
+      window.selectedExpenseCategory = null;
+      renderFinance();
+    }
+
     function createDonutChart(data, containerId, legendId, options = {}) {
       const total = Object.values(data).reduce((a, b) => a + b, 0);
       const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
+      const isExpenseChart = (containerId === "expenseChartContainer");
 
       let svg = `<svg class="donut-svg" viewBox="0 0 140 140"><g transform="translate(70,70)">`;
       let angle = 0;
@@ -8472,21 +8585,46 @@
           const large = deg > 180 ? 1 : 0;
           const path = `M ${x1o} ${y1o} A ${outerR} ${outerR} 0 ${large} 1 ${x2o} ${y2o} L ${x2i} ${y2i} A ${innerR} ${innerR} 0 ${large} 0 ${x1i} ${y1i} Z`;
           const color = DONUT_COLORS[idx % DONUT_COLORS.length];
-          svg += `<path class="donut-segment" d="${path}" fill="${color}" stroke="var(--bg2)" stroke-width="1.5"/>`;
+
+          let segClass = "donut-segment";
+          let clickAttr = "";
+          if (isExpenseChart) {
+            const isSelected = window.selectedExpenseCategory && String(window.selectedExpenseCategory).toLowerCase() === String(label).toLowerCase();
+            const hasAnySelected = !!window.selectedExpenseCategory;
+            if (isSelected) segClass += " active";
+            else if (hasAnySelected) segClass += " dimmed";
+            const safeLabel = encodeURIComponent(label);
+            clickAttr = `onclick="handleExpenseCategoryClick(decodeURIComponent('${safeLabel}'), event)" style="cursor:pointer" title="Click to filter by ${label} (${formatCompactCurrency(value)})"`;
+          }
+
+          svg += `<path class="${segClass}" d="${path}" fill="${color}" stroke="var(--bg2)" stroke-width="1.5" ${clickAttr}/>`;
 
           angle += deg;
         });
       }
 
       svg += "</g></svg>";
-      const svgOnly = document.getElementById(containerId).querySelector('.donut-svg');
-      if (svgOnly) document.getElementById(containerId).removeChild(svgOnly);
+      const containerEl = document.getElementById(containerId);
+      if (!containerEl) return;
+      const svgOnly = containerEl.querySelector('.donut-svg');
+      if (svgOnly) containerEl.removeChild(svgOnly);
       const svg_el = document.createElement('div');
       svg_el.innerHTML = svg;
-      document.getElementById(containerId).insertBefore(svg_el.firstChild, document.getElementById(containerId).querySelector('.donut-center-text'));
+      containerEl.insertBefore(svg_el.firstChild, containerEl.querySelector('.donut-center-text'));
 
-      const totalText = total === 0 ? "₹0" : formatCompactCurrency(total);
-      document.getElementById(containerId).querySelector('.donut-total').textContent = totalText;
+      const totalEl = containerEl.querySelector('.donut-total');
+      const labelEl = containerEl.querySelector('.donut-label');
+
+      if (isExpenseChart && window.selectedExpenseCategory && data[window.selectedExpenseCategory] !== undefined) {
+        const catVal = data[window.selectedExpenseCategory];
+        const catPct = total > 0 ? Math.round((catVal / total) * 100) : 0;
+        if (totalEl) totalEl.textContent = formatCompactCurrency(catVal);
+        if (labelEl) labelEl.textContent = `${window.selectedExpenseCategory} (${catPct}%)`;
+      } else {
+        const totalText = total === 0 ? "₹0" : formatCompactCurrency(total);
+        if (totalEl) totalEl.textContent = totalText;
+        if (labelEl) labelEl.textContent = options.label || (isExpenseChart ? "Total" : "Gains");
+      }
 
       let legendHtml = "";
       if (total === 0) {
@@ -8496,10 +8634,21 @@
           const [label, value] = entry;
           const color = DONUT_COLORS[idx % DONUT_COLORS.length];
           const displayValue = formatCompactCurrency(value);
-          legendHtml += `<div class="donut-legend-item"><div class="donut-legend-color" style="background:${color}"></div><div class="donut-legend-label">${label}</div><div class="donut-legend-amt">${displayValue}</div></div>`;
+          let itemClass = "donut-legend-item";
+          let clickAttr = "";
+          if (isExpenseChart) {
+            const isSelected = window.selectedExpenseCategory && String(window.selectedExpenseCategory).toLowerCase() === String(label).toLowerCase();
+            const hasAnySelected = !!window.selectedExpenseCategory;
+            if (isSelected) itemClass += " active";
+            else if (hasAnySelected) itemClass += " dimmed";
+            const safeLabel = encodeURIComponent(label);
+            clickAttr = `onclick="handleExpenseCategoryClick(decodeURIComponent('${safeLabel}'), event)" style="cursor:pointer" title="Click to filter by ${label}"`;
+          }
+          legendHtml += `<div class="${itemClass}" ${clickAttr}><div class="donut-legend-color" style="background:${color}"></div><div class="donut-legend-label">${label}</div><div class="donut-legend-amt">${displayValue}</div></div>`;
         });
       }
-      document.getElementById(legendId).innerHTML = legendHtml;
+      const legendEl = document.getElementById(legendId);
+      if (legendEl) legendEl.innerHTML = legendHtml;
     }
     function seedDataIfEmpty() {
       if (!currentUser || currentUser.userId !== 'demo') return;
@@ -8656,7 +8805,7 @@
       window.currentExpenseId = null;
       document.getElementById("expenseModalTitle").textContent = "Add Expense";
       document.getElementById("expEditDate").value = getLocalDateString();
-      document.getElementById("expEditCat").value = "Food";
+      document.getElementById("expEditCat").value = window.selectedExpenseCategory || "Food";
       document.getElementById("expEditDesc").value = "";
       document.getElementById("expEditAmt").value = "";
       document.getElementById("expEditMethod").value = "Cash";
@@ -9284,11 +9433,35 @@
       sortedInc.forEach(i => { incListHtml += `<div class="txrow"><span>${i.date}</span><span class="cat">${i.src}</span><span class="note">${i.desc || "—"}</span><span class="amt pos">+${fmt(i.amt)}</span><button class="edit" onclick="editIncome(${i.id})">Edit</button><button class="del" onclick="delIncome(${i.id})">&times;</button></div>`; });
       document.getElementById("incomeList").innerHTML = incListHtml || "<div style='color:var(--txt-dim); padding:12px'>No income yet</div>";
 
-      /* Expense list */
+      /* Expense list (supports category filtering) */
       const sorted = [...expenses].sort((a, b) => new Date(b.date) - new Date(a.date));
+      const clearBtn = document.getElementById("clearExpenseCategoryFilterBtn");
+      const filterBadge = document.getElementById("expenseCategoryFilterBadge");
+      const filterBadgeText = document.getElementById("expenseCategoryFilterBadgeText");
+
+      let filteredSorted = sorted;
+      if (window.selectedExpenseCategory) {
+        filteredSorted = sorted.filter(e => String(e.cat).toLowerCase() === String(window.selectedExpenseCategory).toLowerCase());
+        const catTotal = filteredSorted.reduce((sum, e) => sum + (e.amt || 0), 0);
+
+        if (clearBtn) clearBtn.style.display = "inline-flex";
+        if (filterBadge) filterBadge.style.display = "inline-flex";
+        if (filterBadgeText) filterBadgeText.textContent = `${window.selectedExpenseCategory}: ${fmt(catTotal)} (${filteredSorted.length})`;
+      } else {
+        if (clearBtn) clearBtn.style.display = "none";
+        if (filterBadge) filterBadge.style.display = "none";
+      }
+
       let expListHtml = "";
-      sorted.forEach(e => { expListHtml += `<div class="txrow"><span>${e.date}</span><span class="cat">${e.cat}</span><span class="note">${e.desc}</span><span class="amt neg">-${fmt(e.amt)}</span><button class="edit" onclick="editExpense(${e.id})">Edit</button><button class="del" onclick="delExpense(${e.id})">&times;</button></div>`; });
-      document.getElementById("expenseList").innerHTML = expListHtml || "<div style='color:var(--txt-dim); padding:12px'>No expenses yet</div>";
+      filteredSorted.forEach(e => {
+        expListHtml += `<div class="txrow"><span>${e.date}</span><span class="cat">${e.cat}</span><span class="note">${e.desc}</span><span class="amt neg">-${fmt(e.amt)}</span><button class="edit" onclick="editExpense(${e.id})">Edit</button><button class="del" onclick="delExpense(${e.id})">&times;</button></div>`;
+      });
+
+      const emptyMsg = window.selectedExpenseCategory
+        ? `<div style='color:var(--txt-dim); padding:18px; text-align:center'>No "${window.selectedExpenseCategory}" expenses for this period. <a href="javascript:void(0)" onclick="clearExpenseCategoryFilter()" style="color:var(--accent); text-decoration:underline; font-weight:600; margin-left:6px">Show all</a></div>`
+        : "<div style='color:var(--txt-dim); padding:12px'>No expenses yet</div>";
+
+      document.getElementById("expenseList").innerHTML = expListHtml || emptyMsg;
 
       /* Savings list */
       const sortedSav = [...savings].sort((a, b) => new Date(b.date) - new Date(a.date));
