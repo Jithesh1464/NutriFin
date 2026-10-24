@@ -7284,11 +7284,25 @@
   <script>
     /* ================= PRODUCTION API CONFIG ================= */
     const API_URL = (function () {
-      if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-        return 'http://localhost:8787'; // Cloudflare Wrangler local dev
+      if (typeof window !== 'undefined' && window.USE_LOCAL_WRANGLER) {
+        return 'http://localhost:8787';
       }
       return 'https://gains-ledger-worker.jitheshkottu10872.workers.dev';
     })();
+
+    /* Safe fetch with timeout to prevent hanging UI */
+    async function safeFetch(url, options = {}, timeoutMs = 8000) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(id);
+        return response;
+      } catch (err) {
+        clearTimeout(id);
+        throw err;
+      }
+    }
 
     let currentUser = null;
     let authToken = null;
@@ -7348,28 +7362,30 @@
     }
 
     /* ================= CLOUDFLARE WORKER / D1 SYNC ================= */
-    async function syncToCloudflare(dataType, data) {
+    async function syncToCloudflare(dataType, data, forceOverwrite = false) {
       if (!authToken || authToken === 'offline-token' || !currentUser) return false;
 
       try {
         const deletedIds = getDeletedIds(dataType);
+        const isForce = forceOverwrite || (Array.isArray(data) && data.length === 0);
         const payload = {
           action: 'sync',
           dataType,
           data,
           deletedIds,
+          forceOverwrite: isForce,
           userId: currentUser.userId,
           timestamp: Date.now()
         };
 
-        const response = await fetch(`${API_URL}/sync`, {
+        const response = await safeFetch(`${API_URL}/sync`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
           },
           body: JSON.stringify(payload)
-        });
+        }, 8000);
 
         if (!response.ok) {
           console.error(`❌ Sync failed: ${response.status} ${response.statusText}`);
@@ -8811,6 +8827,45 @@
       document.getElementById("stockEditModal").classList.add("show");
     }
     function closeStockModal() { document.getElementById("stockEditModal").classList.remove("show"); }
+    // Auto-sync stock purchase expenses (money invested from pocket)
+    function syncStockPurchaseExpenses() {
+      const stocks = loadStocks();
+      const exp = loadExpenses();
+      let changed = false;
+
+      stocks.forEach(st => {
+        const principal = Math.round(st.shares * st.avgPrice);
+        const stockDesc = `Stock Investment: ${st.ticker} (${st.shares} shares @ ₹${st.avgPrice})`;
+        const expIdx = exp.findIndex(e => String(e.fromStock) === String(st.id));
+
+        if (expIdx >= 0) {
+          if (exp[expIdx].amt !== principal || exp[expIdx].date !== st.date || exp[expIdx].desc !== stockDesc) {
+            exp[expIdx].amt = principal;
+            exp[expIdx].date = st.date;
+            exp[expIdx].desc = stockDesc;
+            exp[expIdx].cat = "Investment";
+            changed = true;
+          }
+        } else {
+          exp.push({
+            id: Date.now() + Math.random(),
+            date: st.date,
+            cat: "Investment",
+            desc: stockDesc,
+            amt: principal,
+            method: "Bank",
+            tags: ["Stocks", st.ticker],
+            fromStock: st.id
+          });
+          changed = true;
+        }
+      });
+
+      if (changed) {
+        saveExpenses(exp);
+      }
+    }
+
     function saveStockEdit() {
       const ticker = document.getElementById("stockEditTicker").value.toUpperCase();
       const date = document.getElementById("stockEditDate").value;
@@ -8819,18 +8874,67 @@
       const current = parseFloat(document.getElementById("stockEditCurrent").value);
       if (!ticker || !shares || !avgPrice || !current) return;
       const st = loadStocks();
-      const id = window.currentStockId;
-      if (id) {
-        const idx = st.findIndex(s => s.id === id);
-        if (idx >= 0) st[idx] = { id, ticker, date, shares, avgPrice, current, value: shares * current };
+      const id = window.currentStockId || Date.now();
+      const principal = Math.round(shares * avgPrice);
+      const value = Math.round(shares * current);
+
+      const existingIdx = st.findIndex(s => s.id === id);
+      if (existingIdx >= 0) {
+        st[existingIdx] = { id, ticker, date, shares, avgPrice, current, value, principal };
       } else {
-        st.push({ id: Date.now(), ticker, date, shares, avgPrice, current, value: shares * current });
+        st.push({ id, ticker, date, shares, avgPrice, current, value, principal });
       }
       saveStocks(st);
+
+      // Record money spent from pocket as an Investment expense
+      const exp = loadExpenses();
+      const stockDesc = `Stock Investment: ${ticker} (${shares} shares @ ₹${avgPrice})`;
+      const expIdx = exp.findIndex(e => String(e.fromStock) === String(id));
+
+      if (expIdx >= 0) {
+        exp[expIdx] = {
+          ...exp[expIdx],
+          date: date,
+          cat: "Investment",
+          desc: stockDesc,
+          amt: principal,
+          method: exp[expIdx].method || "Bank"
+        };
+      } else {
+        exp.push({
+          id: Date.now() + Math.random(),
+          date: date,
+          cat: "Investment",
+          desc: stockDesc,
+          amt: principal,
+          method: "Bank",
+          tags: ["Stocks", ticker],
+          fromStock: id
+        });
+      }
+      saveExpenses(exp);
+
       closeStockModal();
       renderFinance();
     }
-    function delStock(id) { markIdDeleted('stocks', id); const st = loadStocks().filter(s => String(s.id) !== String(id)); saveStocks(st); renderFinance(); }
+
+    function delStock(id) {
+      if (!confirm('Delete this stock holding and its linked investment expense?')) return;
+      markIdDeleted('stocks', id);
+      const st = loadStocks().filter(s => String(s.id) !== String(id));
+      saveStocks(st);
+
+      // Clean up linked investment expense
+      const exp = loadExpenses();
+      const linkedExp = exp.find(e => String(e.fromStock) === String(id));
+      if (linkedExp) {
+        markIdDeleted('expenses', linkedExp.id);
+        const updatedExp = exp.filter(e => String(e.fromStock) !== String(id));
+        saveExpenses(updatedExp);
+      }
+
+      renderFinance();
+    }
     function showBarTooltip(el) { const title = el.getAttribute('title'); if (title) alert(title); }
     const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     function initDateSelectors() {
@@ -9086,7 +9190,8 @@
       seedDataIfEmpty();
       initDateSelectors();
 
-      // Process recurring transactions first (auto-create if due)
+      // Sync stock purchase expenses (money invested from pocket) and recurring transactions
+      syncStockPurchaseExpenses();
       processRecurringTransactions();
 
       const expenses = getFilteredExpenses();
@@ -9148,7 +9253,14 @@
       /* Stocks list */
       const sortedStocks = [...stocks].sort((a, b) => new Date(b.date) - new Date(a.date));
       let stListHtml = "";
-      sortedStocks.forEach(st => { const val = st.shares * st.current; stListHtml += `<div class="txrow"><span>${st.date}</span><span class="cat">${st.ticker}</span><span class="note">${st.shares} shares @ ${fmt(st.current)}</span><span class="amt pos">${fmt(val)}</span><button class="edit" onclick="editStock(${st.id})">Edit</button><button class="del" onclick="delStock(${st.id})">&times;</button></div>`; });
+      sortedStocks.forEach(st => {
+        const val = st.shares * st.current;
+        const cost = Math.round(st.shares * st.avgPrice);
+        const gain = val - cost;
+        const gainClass = gain >= 0 ? "pos" : "neg";
+        const gainPrefix = gain >= 0 ? "+" : "";
+        stListHtml += `<div class="txrow" style="flex-wrap:wrap"><span>${st.date}</span><span class="cat">${st.ticker}</span><span class="note">${st.shares} shares @ ${fmt(st.current)} • Cost: ${fmt(cost)}</span><span class="amt ${gainClass}">${fmt(val)} (${gainPrefix}${fmt(gain)})</span><button class="edit" onclick="editStock(${st.id})">Edit</button><button class="del" onclick="delStock(${st.id})">&times;</button></div>`;
+      });
       document.getElementById("stocksList").innerHTML = stListHtml || "<div style='color:var(--txt-dim); padding:12px'>No stocks yet</div>";
 
       /* Budgets */
@@ -10748,7 +10860,7 @@
 
       // 1. First attempt fast single-request bulk download from /api/data
       try {
-        const response = await fetch(`${API_URL}/api/data`, {
+        const response = await safeFetch(`${API_URL}/api/data`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -10795,7 +10907,7 @@
       if (!fetchedAny) {
         for (const [dataType, localKey] of Object.entries(typeMap)) {
           try {
-            const response = await fetch(`${API_URL}/sync/${dataType}`, {
+            const response = await safeFetch(`${API_URL}/sync/${dataType}`, {
               method: 'GET',
               headers: {
                 'Content-Type': 'application/json',
@@ -10863,69 +10975,80 @@
 
       const syncStatusEl = document.getElementById('syncStatusSummary');
       if (syncStatusEl) {
-        syncStatusEl.textContent = 'Synchronizing and merging with Cloudflare D1...';
+        syncStatusEl.textContent = 'Synchronizing with Cloudflare D1...';
       }
-
-      // STEP 1: Always download and smart-merge the latest data from Cloudflare first!
-      try {
-        await loadUserDataFromCloudflare();
-      } catch (err) {
-        console.warn('Pre-sync cloud fetch warning:', err);
-      }
-
-      // STEP 2: Now that local storage contains the full merged dataset (remote + local):
-      const itemsToSync = [
-        { type: 'expenses', data: loadExpenses() },
-        { type: 'income', data: loadIncome() },
-        { type: 'savings', data: loadSavings() },
-        { type: 'stocks', data: loadStocks() },
-        { type: 'budgets', data: loadBudgets() },
-        { type: 'recurring', data: loadRecurring() },
-        { type: 'goals', data: loadGoals() },
-        { type: 'goalContributions', data: loadGoalContributions() }
-      ];
 
       let anySuccess = false;
       let failureCount = 0;
 
-      for (const item of itemsToSync) {
-        const hasData = Array.isArray(item.data) ? item.data.length > 0 : (item.data && Object.keys(item.data).length > 0);
-        if (hasData) {
-          const ok = await syncToCloudflare(item.type, item.data);
-          if (ok) anySuccess = true;
-          else failureCount++;
+      try {
+        // STEP 1: Download latest data from Cloudflare first
+        try {
+          await loadUserDataFromCloudflare();
+        } catch (err) {
+          console.warn('Pre-sync cloud fetch warning:', err);
         }
-      }
 
-      // STEP 3: Re-render all views with the merged data
-      renderFinance();
-      syncRecurringTransactions();
-      renderBudgets();
-      renderGoals();
-      renderRecurring();
+        // STEP 2: Sync all items to Cloudflare (including empty lists when items were deleted!)
+        const itemsToSync = [
+          { type: 'expenses', data: loadExpenses() },
+          { type: 'income', data: loadIncome() },
+          { type: 'savings', data: loadSavings() },
+          { type: 'stocks', data: loadStocks() },
+          { type: 'budgets', data: loadBudgets() },
+          { type: 'recurring', data: loadRecurring() },
+          { type: 'goals', data: loadGoals() },
+          { type: 'goalContributions', data: loadGoalContributions() }
+        ];
 
-      if (syncBtn) { syncBtn.disabled = false; syncBtn.innerHTML = '☁️ Sync with DB'; }
-      if (finSyncBtnText) finSyncBtnText.textContent = 'Sync with DB';
-
-      const expCount = loadExpenses().length;
-      const incCount = loadIncome().length;
-      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      if (syncStatusEl) {
-        if (failureCount === 0) {
-          syncStatusEl.innerHTML = `✅ Synced at <strong style="color:var(--accent)">${nowStr}</strong> with Cloudflare D1 (${expCount} expenses, ${incCount} income)`;
-        } else {
-          syncStatusEl.innerHTML = `⚠️ Sync completed with ${failureCount} pending item(s). Will retry.`;
+        for (const item of itemsToSync) {
+          const deletedCount = getDeletedIds(item.type).length;
+          // Sync if array exists (even if empty, so deletions are synced!) or deleted IDs are pending
+          const shouldSync = Array.isArray(item.data) || (item.data && Object.keys(item.data).length > 0) || deletedCount > 0;
+          if (shouldSync) {
+            const ok = await syncToCloudflare(item.type, item.data, deletedCount > 0);
+            if (ok) anySuccess = true;
+            else failureCount++;
+          }
         }
-      }
 
-      if (showToast) {
-        if (failureCount === 0) {
-          showNotification(`All data synced with Cloudflare D1! ☁️ (${expCount} expenses, ${incCount} income up to date)`, 'success');
-        } else if (anySuccess) {
-          showNotification('Partially synced to DB. Retrying pending items.', 'warning');
-        } else {
-          showNotification('Could not reach cloud DB. Check internet connection.', 'error');
+        // STEP 3: Re-render all views
+        renderFinance();
+        syncRecurringTransactions();
+        renderBudgets();
+        renderGoals();
+        renderRecurring();
+
+        const expCount = loadExpenses().length;
+        const incCount = loadIncome().length;
+        const savCount = loadSavings().length;
+        const stCount = loadStocks().length;
+        const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        if (syncStatusEl) {
+          if (failureCount === 0) {
+            syncStatusEl.innerHTML = `✅ Synced at <strong style="color:var(--accent)">${nowStr}</strong> with Cloudflare D1 (${expCount} exp, ${incCount} inc, ${savCount} sav, ${stCount} st)`;
+          } else {
+            syncStatusEl.innerHTML = `⚠️ Sync completed with ${failureCount} pending item(s).`;
+          }
         }
+
+        if (showToast) {
+          if (failureCount === 0) {
+            showNotification(`All data synced with Cloud DB! ☁️ (${expCount} expenses, ${savCount} savings, ${stCount} stocks)`, 'success');
+          } else if (anySuccess) {
+            showNotification('Partially synced to DB.', 'warning');
+          } else {
+            showNotification('Could not reach cloud DB. Check internet connection.', 'error');
+          }
+        }
+      } catch (globalErr) {
+        console.error('syncAllLocalDataToCloudflare error:', globalErr);
+        if (showToast) showNotification('Sync error: ' + (globalErr.message || 'Network error'), 'error');
+      } finally {
+        // ALWAYS RESET AND RE-ENABLE THE BUTTONS!
+        if (syncBtn) { syncBtn.disabled = false; syncBtn.innerHTML = '☁️ Sync with DB'; }
+        if (finSyncBtnText) finSyncBtnText.textContent = 'Sync with DB';
       }
     }
 
