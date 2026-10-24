@@ -9400,6 +9400,11 @@
       return spent;
     }
 
+    /* Aliases for UI renderers */
+    function renderBudgets() { if (typeof renderBudgetCards === 'function') renderBudgetCards(); }
+    function renderGoals() { if (typeof renderGoalsList === 'function') renderGoalsList(); }
+    function renderRecurring() { if (typeof renderRecurringTable === 'function') renderRecurringTable(); }
+
     function renderBudgetCards() {
       const container = document.getElementById('budgetCards');
       if (!container) return;
@@ -10823,9 +10828,9 @@
             isInitialCloudSyncDone = true;
             renderFinance();
             syncRecurringTransactions();
-            renderBudgets();
-            renderGoals();
-            renderRecurring();
+            if (typeof renderBudgetCards === 'function') renderBudgetCards();
+            if (typeof renderGoalsList === 'function') renderGoalsList();
+            if (typeof renderRecurringTable === 'function') renderRecurringTable();
           } catch (e) {
             console.warn('Initial cloud load warning:', e);
             isInitialCloudSyncDone = true;
@@ -10952,9 +10957,9 @@
         try {
           renderFinance();
           syncRecurringTransactions();
-          renderBudgets();
-          renderGoals();
-          renderRecurring();
+          if (typeof renderBudgetCards === 'function') renderBudgetCards();
+          if (typeof renderGoalsList === 'function') renderGoalsList();
+          if (typeof renderRecurringTable === 'function') renderRecurringTable();
         } catch (e) {
           console.warn('Re-render after cloud load warning:', e);
         }
@@ -11015,9 +11020,9 @@
         // STEP 3: Re-render all views
         renderFinance();
         syncRecurringTransactions();
-        renderBudgets();
-        renderGoals();
-        renderRecurring();
+        if (typeof renderBudgetCards === 'function') renderBudgetCards();
+        if (typeof renderGoalsList === 'function') renderGoalsList();
+        if (typeof renderRecurringTable === 'function') renderRecurringTable();
 
         const expCount = loadExpenses().length;
         const incCount = loadIncome().length;
@@ -11108,9 +11113,9 @@
           isInitialCloudSyncDone = true;
           renderFinance();
           syncRecurringTransactions();
-          renderBudgets();
-          renderGoals();
-          renderRecurring();
+          if (typeof renderBudgetCards === 'function') renderBudgetCards();
+          if (typeof renderGoalsList === 'function') renderGoalsList();
+          if (typeof renderRecurringTable === 'function') renderRecurringTable();
           // Sync any local data to Cloudflare D1
           syncAllLocalDataToCloudflare();
           statusDiv.innerHTML = '<span style="color:var(--accent)">✅ Login successful!</span>';
