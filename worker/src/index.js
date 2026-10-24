@@ -60,9 +60,18 @@ async function ensureSchema(db) {
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
+      CREATE TABLE IF NOT EXISTS user_data_backups (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        data_type TEXT NOT NULL,
+        data TEXT NOT NULL,
+        item_count INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
       CREATE INDEX IF NOT EXISTS idx_user_data_user_type ON user_data (user_id, data_type);
       CREATE INDEX IF NOT EXISTS idx_exercise_history_user_date ON exercise_history (user_id, date_key);
       CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions (user_id);
+      CREATE INDEX IF NOT EXISTS idx_user_data_backups ON user_data_backups (user_id, data_type);
     `);
   } catch (e) {
     console.warn('ensureSchema base create warning:', e.message);
@@ -160,6 +169,14 @@ export default {
     // Data routes (Fetch all data in one request)
     if (path === '/api/data' && request.method === 'GET') {
       return handleFetchAllData(request, env);
+    }
+
+    // Data Backup routes
+    if (path.startsWith('/api/backups/') && request.method === 'GET') {
+      return handleListBackups(request, env);
+    }
+    if (path.startsWith('/api/backups/restore/') && request.method === 'POST') {
+      return handleRestoreBackup(request, env);
     }
 
     // Exercise History routes
@@ -563,7 +580,7 @@ async function handleSync(request, env) {
 
   try {
     const body = await request.json();
-    const { dataType, data } = body;
+    const { dataType, data, deletedIds, forceOverwrite } = body;
 
     if (!dataType || data === undefined || data === null) {
       return json({ error: 'dataType and data required' }, 400);
@@ -574,12 +591,68 @@ async function handleSync(request, env) {
       return json({ error: 'Invalid dataType' }, 400);
     }
 
-    const dataStr = JSON.stringify(data);
-
     const existing = await db
-      .prepare('SELECT id FROM user_data WHERE user_id = ? AND data_type = ? LIMIT 1')
+      .prepare('SELECT id, data FROM user_data WHERE user_id = ? AND data_type = ? LIMIT 1')
       .bind(userId, dataType)
       .first();
+
+    let finalData = data;
+
+    if (existing && existing.data) {
+      // 1. Automatic pre-save snapshot into user_data_backups
+      try {
+        let oldCount = 0;
+        try {
+          const parsedOld = JSON.parse(existing.data);
+          oldCount = Array.isArray(parsedOld) ? parsedOld.length : (typeof parsedOld === 'object' && parsedOld ? Object.keys(parsedOld).length : 0);
+        } catch (e) {}
+        await db
+          .prepare('INSERT INTO user_data_backups (user_id, data_type, data, item_count, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)')
+          .bind(userId, dataType, existing.data, oldCount)
+          .run();
+      } catch (backupErr) {
+        console.warn('Backup insert warning:', backupErr.message);
+      }
+
+      // 2. Non-destructive Smart Merge for Array Collections
+      if (!forceOverwrite && Array.isArray(data)) {
+        try {
+          const existingArray = JSON.parse(existing.data);
+          if (Array.isArray(existingArray) && existingArray.length > 0) {
+            const delSet = new Set(Array.isArray(deletedIds) ? deletedIds.map(String) : []);
+            const map = new Map();
+
+            // First add existing remote items (excluding deliberately deleted IDs)
+            existingArray.forEach((item) => {
+              if (!item) return;
+              const id = item.id !== undefined && item.id !== null ? String(item.id) : null;
+              if (id && delSet.has(id)) return; // Deliberately deleted
+              const key = id || `${item.date || ''}_${item.desc || item.cat || item.name || ''}_${item.amt || item.principal || ''}`;
+              map.set(key, item);
+            });
+
+            // Overlay incoming client items (excluding deleted IDs)
+            data.forEach((item) => {
+              if (!item) return;
+              const id = item.id !== undefined && item.id !== null ? String(item.id) : null;
+              if (id && delSet.has(id)) return;
+              const key = id || `${item.date || ''}_${item.desc || item.cat || item.name || ''}_${item.amt || item.principal || ''}`;
+              if (map.has(key)) {
+                map.set(key, { ...map.get(key), ...item });
+              } else {
+                map.set(key, item);
+              }
+            });
+
+            finalData = Array.from(map.values());
+          }
+        } catch (mergeErr) {
+          console.warn('Server merge fallback to incoming data:', mergeErr);
+        }
+      }
+    }
+
+    const dataStr = JSON.stringify(finalData);
 
     if (existing) {
       try {
@@ -614,7 +687,8 @@ async function handleSync(request, env) {
       }
     }
 
-    return json({ success: true, message: 'Data synced', dataType }, 200);
+    const itemCount = Array.isArray(finalData) ? finalData.length : (typeof finalData === 'object' && finalData ? Object.keys(finalData).length : 1);
+    return json({ success: true, message: 'Data synced safely', dataType, itemCount, data: finalData }, 200);
   } catch (e) {
     console.error('Sync error:', e);
     return json({ error: 'Sync failed: ' + e.message }, 500);
@@ -712,6 +786,86 @@ async function handleDeleteData(request, env) {
   } catch (e) {
     console.error('Delete error:', e);
     return json({ error: 'Delete failed: ' + e.message }, 500);
+  }
+}
+
+/* ================= BACKUP & RESTORE HANDLERS ================= */
+
+async function handleListBackups(request, env) {
+  const db = getDb(env);
+  if (!db) return json({ error: 'Database not configured' }, 500);
+  await ensureSchema(db);
+
+  const userId = getUserIdFromAuth(request);
+  if (!userId) return json({ error: 'Unauthorized' }, 401);
+
+  try {
+    const url = new URL(request.url);
+    const dataType = url.pathname.split('/').pop();
+
+    const rows = await db
+      .prepare('SELECT id, user_id, data_type, item_count, created_at FROM user_data_backups WHERE user_id = ? AND data_type = ? ORDER BY id DESC LIMIT 20')
+      .bind(userId, dataType)
+      .all();
+
+    return json({ success: true, backups: rows.results || [] }, 200);
+  } catch (e) {
+    console.error('List backups error:', e);
+    return json({ error: 'Failed to list backups: ' + e.message }, 500);
+  }
+}
+
+async function handleRestoreBackup(request, env) {
+  const db = getDb(env);
+  if (!db) return json({ error: 'Database not configured' }, 500);
+  await ensureSchema(db);
+
+  const userId = getUserIdFromAuth(request);
+  if (!userId) return json({ error: 'Unauthorized' }, 401);
+
+  try {
+    const url = new URL(request.url);
+    const backupId = url.pathname.split('/').pop();
+
+    const backup = await db
+      .prepare('SELECT * FROM user_data_backups WHERE id = ? AND user_id = ? LIMIT 1')
+      .bind(backupId, userId)
+      .first();
+
+    if (!backup) {
+      return json({ error: 'Backup not found' }, 404);
+    }
+
+    // Save current as a backup first
+    const existing = await db
+      .prepare('SELECT data FROM user_data WHERE user_id = ? AND data_type = ? LIMIT 1')
+      .bind(userId, backup.data_type)
+      .first();
+
+    if (existing) {
+      await db
+        .prepare('INSERT INTO user_data_backups (user_id, data_type, data, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)')
+        .bind(userId, backup.data_type, existing.data)
+        .run();
+
+      await db
+        .prepare('UPDATE user_data SET data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND data_type = ?')
+        .bind(backup.data, userId, backup.data_type)
+        .run();
+    } else {
+      await db
+        .prepare('INSERT INTO user_data (user_id, data_type, data, created_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)')
+        .bind(userId, backup.data_type, backup.data)
+        .run();
+    }
+
+    let parsedData = null;
+    try { parsedData = JSON.parse(backup.data); } catch (e) { parsedData = backup.data; }
+
+    return json({ success: true, message: 'Restored backup successfully', dataType: backup.data_type, data: parsedData }, 200);
+  } catch (e) {
+    console.error('Restore backup error:', e);
+    return json({ error: 'Restore backup failed: ' + e.message }, 500);
   }
 }
 

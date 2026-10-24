@@ -7292,6 +7292,7 @@
 
     let currentUser = null;
     let authToken = null;
+    let isInitialCloudSyncDone = false;
 
     const MAX_SYNC_RETRIES = 3;
     const SYNC_RETRY_DELAY = 1000;
@@ -7301,8 +7302,8 @@
     /* ================= SYNC QUEUE & RETRY LOGIC ================= */
     function enqueueSyncTask(dataType, data) {
       try {
-        if (!authToken || authToken === 'offline-token') {
-          console.log('⚠️ Offline mode - queuing sync task:', dataType);
+        if (!authToken || authToken === 'offline-token' || !isInitialCloudSyncDone) {
+          console.log('⚠️ Sync paused or initial load pending - queuing task:', dataType);
           syncQueue.push({ dataType, data, timestamp: Date.now(), retries: 0 });
           return;
         }
@@ -7351,10 +7352,12 @@
       if (!authToken || authToken === 'offline-token' || !currentUser) return false;
 
       try {
+        const deletedIds = getDeletedIds(dataType);
         const payload = {
           action: 'sync',
           dataType,
           data,
+          deletedIds,
           userId: currentUser.userId,
           timestamp: Date.now()
         };
@@ -7374,7 +7377,11 @@
         }
 
         const result = await response.json();
-        return result.success === true;
+        if (result && result.success === true) {
+          clearDeletedIds(dataType, deletedIds);
+          return true;
+        }
+        return false;
       } catch (e) {
         console.error('❌ Sync fetch error:', e.message);
         return false;
@@ -8323,7 +8330,68 @@
     function swapMeal(dateKey, cd, slotKey, val) { saveOverride(dateKey, slotKey, parseInt(val, 10)); const p = dateKey.split("-"); openDay(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2])); }
     document.getElementById("overlay").addEventListener("click", e => { if (e.target.id === "overlay") closeModal(); });
 
-    /* ================= FINANCE MODULE ================= */
+    /* ================= FINANCE MODULE & SMART MERGE ================= */
+    function getDeletedIdsStorageKey(type) {
+      return currentUser ? `${currentUser.userId}_deleted_${type}` : `deleted_${type}`;
+    }
+    function getDeletedIds(type) {
+      try {
+        return JSON.parse(localStorage.getItem(getDeletedIdsStorageKey(type)) || "[]");
+      } catch (e) { return []; }
+    }
+    function markIdDeleted(type, id) {
+      if (id === undefined || id === null) return;
+      try {
+        const idStr = String(id);
+        const list = getDeletedIds(type);
+        if (!list.includes(idStr)) {
+          list.push(idStr);
+          localStorage.setItem(getDeletedIdsStorageKey(type), JSON.stringify(list));
+        }
+      } catch (e) {}
+    }
+    function clearDeletedIds(type, idsToClear) {
+      try {
+        if (!idsToClear || idsToClear.length === 0) return;
+        const toClearSet = new Set(idsToClear.map(String));
+        const current = getDeletedIds(type);
+        const updated = current.filter(id => !toClearSet.has(String(id)));
+        localStorage.setItem(getDeletedIdsStorageKey(type), JSON.stringify(updated));
+      } catch (e) {}
+    }
+
+    function mergeItemArrays(localItems, remoteItems, deletedIds = []) {
+      if (!Array.isArray(localItems)) localItems = [];
+      if (!Array.isArray(remoteItems)) remoteItems = [];
+
+      const delSet = new Set((deletedIds || []).map(String));
+      const map = new Map();
+
+      // 1. First add remote items, excluding items deleted by user
+      remoteItems.forEach(item => {
+        if (!item) return;
+        const id = item.id !== undefined && item.id !== null ? String(item.id) : null;
+        if (id && delSet.has(id)) return;
+        const key = id || `${item.date || ''}_${item.desc || item.cat || item.name || ''}_${item.amt || item.principal || ''}`;
+        map.set(key, item);
+      });
+
+      // 2. Overlay local items (preserving any offline additions or updates)
+      localItems.forEach(item => {
+        if (!item) return;
+        const id = item.id !== undefined && item.id !== null ? String(item.id) : null;
+        if (id && delSet.has(id)) return;
+        const key = id || `${item.date || ''}_${item.desc || item.cat || item.name || ''}_${item.amt || item.principal || ''}`;
+        if (map.has(key)) {
+          map.set(key, { ...map.get(key), ...item });
+        } else {
+          map.set(key, item);
+        }
+      });
+
+      return Array.from(map.values());
+    }
+
     function getStorageKey(key) { return currentUser ? `${currentUser.userId}_${key}` : key; }
     function loadExpenses() { try { return JSON.parse(localStorage.getItem(getStorageKey("finExpenses")) || "[]"); } catch (e) { return []; } }
     function saveExpenses(list) { try { localStorage.setItem(getStorageKey("finExpenses"), JSON.stringify(list)); enqueueSyncTask('expenses', list); } catch (e) { } }
@@ -8499,7 +8567,7 @@
       document.getElementById("incomeEditModal").classList.add("show");
     }
     function closeIncomeModal() { document.getElementById("incomeEditModal").classList.remove("show"); }
-    function delIncome(id) { const inc = loadIncome().filter(i => i.id !== id); saveIncome(inc); renderFinance(); }
+    function delIncome(id) { markIdDeleted('income', id); const inc = loadIncome().filter(i => String(i.id) !== String(id)); saveIncome(inc); renderFinance(); }
     function renderIncomeTagChips() {
       const container = document.getElementById("incEditTagsContainer");
       container.innerHTML = window.incomeEditTags.map(t => `<span class="tag-chip">${t} <button style="background:none; border:none; color:inherit; cursor:pointer; margin-left:4px" onclick="removeIncomeTag('${t}')">×</button></span>`).join("");
@@ -8568,7 +8636,7 @@
       closeExpenseModal();
       renderFinance();
     }
-    function delExpense(id) { const exp = loadExpenses().filter(e => e.id !== id); saveExpenses(exp); renderFinance(); }
+    function delExpense(id) { markIdDeleted('expenses', id); const exp = loadExpenses().filter(e => String(e.id) !== String(id)); saveExpenses(exp); renderFinance(); }
     function editExpense(id) {
       const exp = loadExpenses().find(e => e.id === id);
       if (!exp) return;
@@ -8719,7 +8787,7 @@
       closeSavingsModal();
       renderFinance();
     }
-    function delSavings(id) { const sav = loadSavings().filter(s => s.id !== id); saveSavings(sav); renderFinance(); }
+    function delSavings(id) { markIdDeleted('savings', id); const sav = loadSavings().filter(s => String(s.id) !== String(id)); saveSavings(sav); renderFinance(); }
     function editStock(id) {
       const st = loadStocks().find(s => s.id === id);
       if (!st) return;
@@ -8762,7 +8830,7 @@
       closeStockModal();
       renderFinance();
     }
-    function delStock(id) { const st = loadStocks().filter(s => s.id !== id); saveStocks(st); renderFinance(); }
+    function delStock(id) { markIdDeleted('stocks', id); const st = loadStocks().filter(s => String(s.id) !== String(id)); saveStocks(st); renderFinance(); }
     function showBarTooltip(el) { const title = el.getAttribute('title'); if (title) alert(title); }
     const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     function initDateSelectors() {
@@ -10431,11 +10499,12 @@
 
     function deleteRecurring(id) {
       if (!confirm('Delete this recurring transaction?')) return;
-      const recurring = loadRecurring().filter(r => r.id !== id);
+      markIdDeleted('recurring', id);
+      const recurring = loadRecurring().filter(r => String(r.id) !== String(id));
       saveRecurring(recurring);
 
-      let expenses = loadExpenses().filter(e => e.fromRecurring !== id);
-      let income = loadIncome().filter(i => i.fromRecurring !== id);
+      let expenses = loadExpenses().filter(e => String(e.fromRecurring) !== String(id));
+      let income = loadIncome().filter(i => String(i.fromRecurring) !== String(id));
       saveExpenses(expenses);
       saveIncome(income);
 
@@ -10504,7 +10573,8 @@
 
     function deleteGoal(id) {
       if (!confirm('Delete this goal?')) return;
-      const goals = loadGoals().filter(g => g.id !== id);
+      markIdDeleted('goals', id);
+      const goals = loadGoals().filter(g => String(g.id) !== String(id));
       saveGoals(goals);
       const contributions = loadGoalContributions();
       if (contributions[id]) {
@@ -10631,14 +10701,14 @@
         hideAuthScreen();
         updateProfileDisplay();
 
-        // Immediately render cached local data
+        // Immediately render cached local data for fast initial paint
         renderFinance();
-        syncRecurringTransactions();
 
         if (authToken && authToken !== 'offline-token') {
           try {
             await loadUserDataFromCloudflare();
             await fetchUserProfileFromBackend();
+            isInitialCloudSyncDone = true;
             renderFinance();
             syncRecurringTransactions();
             renderBudgets();
@@ -10646,13 +10716,14 @@
             renderRecurring();
           } catch (e) {
             console.warn('Initial cloud load warning:', e);
+            isInitialCloudSyncDone = true;
           }
-
-          // Back up local data to Cloudflare D1 if local items exist
-          syncAllLocalDataToCloudflare();
+        } else {
+          isInitialCloudSyncDone = true;
+          syncRecurringTransactions();
         }
 
-        // Flush any offline-queued sync tasks now that we have a token
+        // Flush any offline-queued sync tasks now that initial sync is done
         if (authToken && authToken !== 'offline-token' && syncQueue.length > 0) {
           processSyncQueue();
         }
@@ -10699,14 +10770,19 @@
 
                 const currentLocal = localStorage.getItem(storageKey);
                 const currentParsed = currentLocal ? JSON.parse(currentLocal) : null;
-                const localHasData = Array.isArray(currentParsed) ? currentParsed.length > 0 : (currentParsed && Object.keys(currentParsed).length > 0);
-                const remoteHasData = Array.isArray(remoteVal) ? remoteVal.length > 0 : (remoteVal && Object.keys(remoteVal).length > 0);
+                const deleted = getDeletedIds(dataType);
 
-                // Protect local data: only overwrite if remote has data or local is currently empty
-                if (remoteHasData || !localHasData) {
-                  localStorage.setItem(storageKey, JSON.stringify(remoteVal));
-                  fetchedAny = true;
+                let mergedVal = remoteVal;
+                if (Array.isArray(remoteVal)) {
+                  const currentLocalList = Array.isArray(currentParsed) ? currentParsed : [];
+                  mergedVal = mergeItemArrays(currentLocalList, remoteVal, deleted);
+                } else if (typeof remoteVal === 'object' && remoteVal !== null) {
+                  const currentLocalObj = (currentParsed && typeof currentParsed === 'object' && !Array.isArray(currentParsed)) ? currentParsed : {};
+                  mergedVal = { ...currentLocalObj, ...remoteVal };
                 }
+
+                localStorage.setItem(storageKey, JSON.stringify(mergedVal));
+                fetchedAny = true;
               }
             }
           }
@@ -10739,13 +10815,19 @@
 
               const currentLocal = localStorage.getItem(storageKey);
               const currentParsed = currentLocal ? JSON.parse(currentLocal) : null;
-              const localHasData = Array.isArray(currentParsed) ? currentParsed.length > 0 : (currentParsed && Object.keys(currentParsed).length > 0);
-              const remoteHasData = Array.isArray(result.data) ? result.data.length > 0 : (result.data && Object.keys(result.data).length > 0);
+              const deleted = getDeletedIds(dataType);
 
-              if (remoteHasData || !localHasData) {
-                localStorage.setItem(storageKey, JSON.stringify(result.data));
-                fetchedAny = true;
+              let mergedVal = result.data;
+              if (Array.isArray(result.data)) {
+                const currentLocalList = Array.isArray(currentParsed) ? currentParsed : [];
+                mergedVal = mergeItemArrays(currentLocalList, result.data, deleted);
+              } else if (typeof result.data === 'object' && result.data !== null) {
+                const currentLocalObj = (currentParsed && typeof currentParsed === 'object' && !Array.isArray(currentParsed)) ? currentParsed : {};
+                mergedVal = { ...currentLocalObj, ...result.data };
               }
+
+              localStorage.setItem(storageKey, JSON.stringify(mergedVal));
+              fetchedAny = true;
             }
           } catch (err) {
             console.log(`Failed to load ${dataType} from Cloudflare`, err);
@@ -10753,7 +10835,7 @@
         }
       }
 
-      // 3. Immediately re-render all views if any data was downloaded
+      // 3. Immediately re-render all views with the merged data
       if (fetchedAny) {
         try {
           renderFinance();
@@ -10767,7 +10849,7 @@
       }
     }
 
-    /* ================= SYNC ALL LOCAL DATA TO CLOUD ================= */
+    /* ================= TRUE TWO-WAY SYNC WITH CLOUD DB ================= */
     async function syncAllLocalDataToCloudflare(showToast = false) {
       if (!currentUser || !authToken || authToken === 'offline-token') {
         if (showToast) showNotification('Please login to sync with Cloud DB', 'error');
@@ -10781,9 +10863,17 @@
 
       const syncStatusEl = document.getElementById('syncStatusSummary');
       if (syncStatusEl) {
-        syncStatusEl.textContent = 'Uploading transactions & recurring rules to Cloudflare D1...';
+        syncStatusEl.textContent = 'Synchronizing and merging with Cloudflare D1...';
       }
 
+      // STEP 1: Always download and smart-merge the latest data from Cloudflare first!
+      try {
+        await loadUserDataFromCloudflare();
+      } catch (err) {
+        console.warn('Pre-sync cloud fetch warning:', err);
+      }
+
+      // STEP 2: Now that local storage contains the full merged dataset (remote + local):
       const itemsToSync = [
         { type: 'expenses', data: loadExpenses() },
         { type: 'income', data: loadIncome() },
@@ -10807,13 +10897,22 @@
         }
       }
 
+      // STEP 3: Re-render all views with the merged data
+      renderFinance();
+      syncRecurringTransactions();
+      renderBudgets();
+      renderGoals();
+      renderRecurring();
+
       if (syncBtn) { syncBtn.disabled = false; syncBtn.innerHTML = '☁️ Sync with DB'; }
       if (finSyncBtnText) finSyncBtnText.textContent = 'Sync with DB';
 
+      const expCount = loadExpenses().length;
+      const incCount = loadIncome().length;
       const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       if (syncStatusEl) {
         if (failureCount === 0) {
-          syncStatusEl.innerHTML = `✅ Last synced at <strong style="color:var(--accent)">${nowStr}</strong> with Cloudflare D1`;
+          syncStatusEl.innerHTML = `✅ Synced at <strong style="color:var(--accent)">${nowStr}</strong> with Cloudflare D1 (${expCount} expenses, ${incCount} income)`;
         } else {
           syncStatusEl.innerHTML = `⚠️ Sync completed with ${failureCount} pending item(s). Will retry.`;
         }
@@ -10821,7 +10920,7 @@
 
       if (showToast) {
         if (failureCount === 0) {
-          showNotification('All data successfully synced to Cloudflare D1! ☁️', 'success');
+          showNotification(`All data synced with Cloudflare D1! ☁️ (${expCount} expenses, ${incCount} income up to date)`, 'success');
         } else if (anySuccess) {
           showNotification('Partially synced to DB. Retrying pending items.', 'warning');
         } else {
@@ -10883,6 +10982,7 @@
           updateProfileDisplay();
           await loadUserDataFromCloudflare();
           await fetchUserProfileFromBackend();
+          isInitialCloudSyncDone = true;
           renderFinance();
           syncRecurringTransactions();
           renderBudgets();
