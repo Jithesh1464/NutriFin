@@ -1435,6 +1435,170 @@
       transform: translateY(0);
     }
 
+    /* ======== DETAILED EXPENSES INLINE FILTER BAR ======== */
+    .detailed-expense-filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: var(--input-bg);
+      border: 1px solid var(--panel-brd);
+      border-radius: 12px;
+      flex-wrap: wrap;
+    }
+
+    .def-filter-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg2);
+      border: 1px solid var(--panel-brd);
+      border-radius: 8px;
+      padding: 5px 10px;
+      position: relative;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .def-filter-group:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 8px rgba(195, 255, 77, 0.2);
+    }
+
+    .def-filter-icon {
+      font-size: 13px;
+      opacity: 0.9;
+      user-select: none;
+    }
+
+    .def-filter-group select {
+      background: transparent;
+      border: none;
+      color: var(--txt);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 2px 4px 2px 0;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .def-filter-group select option {
+      background: var(--bg2);
+      color: var(--txt);
+    }
+
+    .def-filter-group input[type="date"] {
+      background: transparent;
+      border: none;
+      color: var(--txt);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 2px 4px 2px 0;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .def-mini-clear {
+      background: transparent;
+      border: none;
+      color: var(--txt-dim);
+      font-size: 14px;
+      cursor: pointer;
+      padding: 0 2px;
+      line-height: 1;
+      border-radius: 50%;
+      transition: color 0.15s;
+      margin-left: 2px;
+    }
+
+    .def-mini-clear:hover {
+      color: #ff6b6b;
+    }
+
+    /* ======== DETAILED EXPENSES INLINE FILTER BAR ======== */
+    .detailed-expense-filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: var(--input-bg);
+      border: 1px solid var(--panel-brd);
+      border-radius: 12px;
+      flex-wrap: wrap;
+    }
+
+    .def-filter-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg2);
+      border: 1px solid var(--panel-brd);
+      border-radius: 8px;
+      padding: 5px 10px;
+      position: relative;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .def-filter-group:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 8px rgba(195, 255, 77, 0.2);
+    }
+
+    .def-filter-icon {
+      font-size: 13px;
+      opacity: 0.9;
+      user-select: none;
+    }
+
+    .def-filter-group select {
+      background: transparent;
+      border: none;
+      color: var(--txt);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 2px 4px 2px 0;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .def-filter-group select option {
+      background: var(--bg2);
+      color: var(--txt);
+    }
+
+    .def-filter-group input[type="date"] {
+      background: transparent;
+      border: none;
+      color: var(--txt);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 2px 4px 2px 0;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .def-mini-clear {
+      background: transparent;
+      border: none;
+      color: var(--txt-dim);
+      font-size: 14px;
+      cursor: pointer;
+      padding: 0 2px;
+      line-height: 1;
+      border-radius: 50%;
+      transition: color 0.15s;
+      margin-left: 2px;
+    }
+
+    .def-mini-clear:hover {
+      color: #ff6b6b;
+    }
+
     /* ======== EXCEL REPORT EXPORT MODAL STYLES ======== */
     .export-scope-pill {
       display: flex;
@@ -7021,13 +7185,29 @@
             </span>
           </div>
           <div style="display:flex; align-items:center; gap:8px">
-            <button id="clearExpenseCategoryFilterBtn" class="btn-clear-filter" onclick="clearExpenseCategoryFilter()" style="display:none" title="Clear category filter">
+            <button id="clearExpenseCategoryFilterBtn" class="btn-clear-filter" onclick="clearExpenseDetailedFilters()" style="display:none" title="Clear all filters">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               <span>Clear Filter</span>
             </button>
             <button class="btn-add" style="margin:0" onclick="addExpense()">+ Add</button>
           </div>
         </div>
+
+        <!-- Inline Filtering Controls (Category & Date) -->
+        <div class="detailed-expense-filter-bar">
+          <div class="def-filter-group" title="Filter by category">
+            <span class="def-filter-icon">🏷️</span>
+            <select id="detailedExpenseCatSelect" onchange="onDetailedExpenseCatChange(this.value)">
+              <option value="">All Categories</option>
+            </select>
+          </div>
+          <div class="def-filter-group" title="Filter by specific date">
+            <span class="def-filter-icon">📅</span>
+            <input type="date" id="detailedExpenseDateInput" onchange="onDetailedExpenseDateChange(this.value)">
+            <button type="button" id="clearDetailedExpenseDateBtn" class="def-mini-clear" onclick="clearDetailedExpenseDate()" style="display:none" title="Clear date filter">&times;</button>
+          </div>
+        </div>
+
         <div class="txlist" id="expenseList" style="max-height:300px"></div>
       </div>
 
@@ -8714,6 +8894,7 @@
     }
     const DONUT_COLORS = ["#c3ff4d", "#5fc9ff", "#ff7a7a", "#ffb864", "#c88cff", "#4ddbc0", "#ffaa44", "#88cc88", "#ff99dd", "#44ddff"];
     window.selectedExpenseCategory = null;
+    window.selectedExpenseDate = null;
 
     function handleExpenseCategoryClick(category, event) {
       if (event) {
@@ -8737,9 +8918,29 @@
       }
     }
 
-    function clearExpenseCategoryFilter() {
-      window.selectedExpenseCategory = null;
+    function onDetailedExpenseCatChange(val) {
+      window.selectedExpenseCategory = val ? val : null;
       renderFinance();
+    }
+
+    function onDetailedExpenseDateChange(val) {
+      window.selectedExpenseDate = val ? val : null;
+      renderFinance();
+    }
+
+    function clearDetailedExpenseDate() {
+      window.selectedExpenseDate = null;
+      renderFinance();
+    }
+
+    function clearExpenseDetailedFilters() {
+      window.selectedExpenseCategory = null;
+      window.selectedExpenseDate = null;
+      renderFinance();
+    }
+
+    function clearExpenseCategoryFilter() {
+      clearExpenseDetailedFilters();
     }
 
     function createDonutChart(data, containerId, legendId, options = {}) {
@@ -9615,20 +9816,58 @@
       sortedInc.forEach(i => { incListHtml += `<div class="txrow"><span>${i.date}</span><span class="cat">${i.src}</span><span class="note">${i.desc || "—"}</span><span class="amt pos">+${fmt(i.amt)}</span><button class="edit" onclick="editIncome(${i.id})">Edit</button><button class="del" onclick="delIncome(${i.id})">&times;</button></div>`; });
       document.getElementById("incomeList").innerHTML = incListHtml || "<div style='color:var(--txt-dim); padding:12px'>No income yet</div>";
 
-      /* Expense list (supports category filtering) */
+      /* Populate Detailed Expense Category Filter dropdown */
+      const defCatSelect = document.getElementById("detailedExpenseCatSelect");
+      if (defCatSelect) {
+        const baseCategories = ['Food', 'Housing', 'Utilities', 'Transportation', 'Entertainment', 'Health', 'Shopping', 'Investment', 'Other'];
+        const uniqueCats = Array.from(new Set([...baseCategories, ...expenses.map(e => e.cat).filter(Boolean)])).sort();
+
+        let catOptions = '<option value="">All Categories</option>';
+        uniqueCats.forEach(c => {
+          const sel = (window.selectedExpenseCategory && String(window.selectedExpenseCategory).toLowerCase() === String(c).toLowerCase()) ? 'selected' : '';
+          catOptions += `<option value="${escapeXml(c)}" ${sel}>${escapeXml(c)}</option>`;
+        });
+        defCatSelect.innerHTML = catOptions;
+        defCatSelect.value = window.selectedExpenseCategory || "";
+      }
+
+      const defDateInput = document.getElementById("detailedExpenseDateInput");
+      const defDateClearBtn = document.getElementById("clearDetailedExpenseDateBtn");
+      if (defDateInput) {
+        defDateInput.value = window.selectedExpenseDate || "";
+      }
+      if (defDateClearBtn) {
+        defDateClearBtn.style.display = window.selectedExpenseDate ? "inline-block" : "none";
+      }
+
+      /* Expense list (supports category & date filtering) */
       const sorted = [...expenses].sort((a, b) => new Date(b.date) - new Date(a.date));
       const clearBtn = document.getElementById("clearExpenseCategoryFilterBtn");
       const filterBadge = document.getElementById("expenseCategoryFilterBadge");
       const filterBadgeText = document.getElementById("expenseCategoryFilterBadgeText");
 
       let filteredSorted = sorted;
+
       if (window.selectedExpenseCategory) {
-        filteredSorted = sorted.filter(e => String(e.cat).toLowerCase() === String(window.selectedExpenseCategory).toLowerCase());
-        const catTotal = filteredSorted.reduce((sum, e) => sum + (e.amt || 0), 0);
+        filteredSorted = filteredSorted.filter(e => String(e.cat).toLowerCase() === String(window.selectedExpenseCategory).toLowerCase());
+      }
+
+      if (window.selectedExpenseDate) {
+        filteredSorted = filteredSorted.filter(e => String(e.date) === String(window.selectedExpenseDate));
+      }
+
+      const isFilterActive = !!(window.selectedExpenseCategory || window.selectedExpenseDate);
+
+      if (isFilterActive) {
+        const catTotal = filteredSorted.reduce((sum, e) => sum + (parseFloat(e.amt) || 0), 0);
+        const filterParts = [];
+        if (window.selectedExpenseCategory) filterParts.push(window.selectedExpenseCategory);
+        if (window.selectedExpenseDate) filterParts.push(window.selectedExpenseDate);
+        const filterLabel = filterParts.join(' • ');
 
         if (clearBtn) clearBtn.style.display = "inline-flex";
         if (filterBadge) filterBadge.style.display = "inline-flex";
-        if (filterBadgeText) filterBadgeText.textContent = `${window.selectedExpenseCategory}: ${fmt(catTotal)} (${filteredSorted.length})`;
+        if (filterBadgeText) filterBadgeText.textContent = `${filterLabel}: ${fmt(catTotal)} (${filteredSorted.length} ${filteredSorted.length === 1 ? 'item' : 'items'})`;
       } else {
         if (clearBtn) clearBtn.style.display = "none";
         if (filterBadge) filterBadge.style.display = "none";
@@ -9639,8 +9878,17 @@
         expListHtml += `<div class="txrow"><span>${e.date}</span><span class="cat">${e.cat}</span><span class="note">${e.desc}</span><span class="amt neg">-${fmt(e.amt)}</span><button class="edit" onclick="editExpense(${e.id})">Edit</button><button class="del" onclick="delExpense(${e.id})">&times;</button></div>`;
       });
 
-      const emptyMsg = window.selectedExpenseCategory
-        ? `<div style='color:var(--txt-dim); padding:18px; text-align:center'>No "${window.selectedExpenseCategory}" expenses for this period. <a href="javascript:void(0)" onclick="clearExpenseCategoryFilter()" style="color:var(--accent); text-decoration:underline; font-weight:600; margin-left:6px">Show all</a></div>`
+      let emptyDescription = "expenses";
+      if (window.selectedExpenseCategory && window.selectedExpenseDate) {
+        emptyDescription = `"${window.selectedExpenseCategory}" expenses on ${window.selectedExpenseDate}`;
+      } else if (window.selectedExpenseCategory) {
+        emptyDescription = `"${window.selectedExpenseCategory}" expenses`;
+      } else if (window.selectedExpenseDate) {
+        emptyDescription = `expenses on ${window.selectedExpenseDate}`;
+      }
+
+      const emptyMsg = isFilterActive
+        ? `<div style='color:var(--txt-dim); padding:18px; text-align:center'>No ${emptyDescription} found for this period. <a href="javascript:void(0)" onclick="clearExpenseDetailedFilters()" style="color:var(--accent); text-decoration:underline; font-weight:600; margin-left:6px">Show all</a></div>`
         : "<div style='color:var(--txt-dim); padding:12px'>No expenses yet</div>";
 
       document.getElementById("expenseList").innerHTML = expListHtml || emptyMsg;
