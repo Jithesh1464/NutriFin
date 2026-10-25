@@ -1410,17 +1410,22 @@
     .btn-clear-filter {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      justify-content: center;
+      gap: 3px;
       background: rgba(255, 75, 75, 0.14);
       color: #ff6b6b;
       border: 1px solid rgba(255, 75, 75, 0.35);
-      border-radius: 10px;
-      padding: 6px 12px;
-      font-size: 11px;
+      border-radius: 8px;
+      padding: 0 8px;
+      height: 28px;
+      box-sizing: border-box;
+      font-size: 10px;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s ease;
       margin: 0;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .btn-clear-filter:hover {
@@ -1435,23 +1440,45 @@
       transform: translateY(0);
     }
 
-    /* ======== DETAILED EXPENSES HEADER FILTERS (COMPACT) ======== */
+    /* ======== DETAILED EXPENSES HEADER CONTROLS (INLINE & COMPACT) ======== */
+    .btn-add-header {
+      width: 72px !important;
+      height: 28px !important;
+      box-sizing: border-box !important;
+      padding: 0 !important;
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      border-radius: 8px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      margin: 0 !important;
+      flex-shrink: 0 !important;
+      cursor: pointer;
+    }
+
     .def-header-select {
       background: var(--input-bg);
       border: 1px solid var(--panel-brd);
       color: var(--txt);
       font-size: 11px;
       font-weight: 600;
-      border-radius: 9px;
-      padding: 0 10px;
-      height: 32px;
+      border-radius: 8px;
+      padding: 0 4px;
+      height: 28px;
+      width: 72px;
+      box-sizing: border-box;
       outline: none;
       cursor: pointer;
       transition: border-color 0.2s, box-shadow 0.2s;
-      max-width: 130px;
       font-family: inherit;
       color-scheme: dark;
       margin: 0;
+      text-align: center;
+      flex-shrink: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .def-header-select:hover,
@@ -1464,20 +1491,23 @@
       background: var(--bg2);
       color: var(--txt);
       padding: 6px;
+      text-align: left;
     }
 
     .def-header-date-wrap {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
       background: var(--input-bg);
       border: 1px solid var(--panel-brd);
-      border-radius: 9px;
-      padding: 0 8px;
-      height: 32px;
+      border-radius: 8px;
+      padding: 0 5px;
+      height: 28px;
+      width: 92px;
       box-sizing: border-box;
       transition: border-color 0.2s, box-shadow 0.2s;
       margin: 0;
+      flex-shrink: 0;
     }
 
     .def-header-date-wrap:hover,
@@ -1490,15 +1520,22 @@
       background: transparent;
       border: none;
       color: var(--txt);
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
       outline: none;
       cursor: pointer;
       font-family: inherit;
       color-scheme: dark;
       padding: 0;
-      max-width: 108px;
+      width: 100%;
       height: 100%;
+    }
+
+    .def-header-date::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      padding: 0;
+      margin-left: 1px;
+      filter: invert(0.8);
     }
 
     .def-header-date-clear {
@@ -1508,7 +1545,7 @@
       font-size: 14px;
       line-height: 1;
       cursor: pointer;
-      padding: 0 2px;
+      padding: 0 1px;
       border-radius: 50%;
       transition: color 0.15s;
     }
@@ -7095,26 +7132,25 @@
       </div>
 
       <div class="panel-box" id="detailedExpensesPanel">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px">
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">
-            <h3 style="margin:0">Detailed Expenses</h3>
-            <span id="expenseCategoryFilterBadge" style="display:none; align-items:center; gap:6px; background:rgba(195,255,77,0.12); border:1px solid rgba(195,255,77,0.3); color:var(--accent); font-size:11px; font-weight:700; padding:3px 10px; border-radius:12px">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px; flex-wrap:nowrap">
+          <div style="display:flex; align-items:center; gap:6px; min-width:0; flex-shrink:1; overflow:hidden">
+            <h3 style="margin:0; font-size:15px; white-space:nowrap; flex-shrink:0">Detailed Expenses</h3>
+            <span id="expenseCategoryFilterBadge" style="display:none; align-items:center; gap:4px; background:rgba(195,255,77,0.12); border:1px solid rgba(195,255,77,0.3); color:var(--accent); font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px; flex-shrink:1">
               <span id="expenseCategoryFilterBadgeText">Food</span>
             </span>
           </div>
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">
+          <div style="display:flex; align-items:center; gap:6px; flex-shrink:0; flex-wrap:nowrap">
             <select id="detailedExpenseCatSelect" class="def-header-select" onchange="onDetailedExpenseCatChange(this.value)" title="Filter by category">
-              <option value="">All Categories</option>
+              <option value="">Category</option>
             </select>
             <div class="def-header-date-wrap" title="Filter by specific date">
               <input type="date" id="detailedExpenseDateInput" class="def-header-date" onchange="onDetailedExpenseDateChange(this.value)">
               <button type="button" id="clearDetailedExpenseDateBtn" class="def-header-date-clear" onclick="clearDetailedExpenseDate()" style="display:none" title="Clear date filter">&times;</button>
             </div>
             <button id="clearExpenseCategoryFilterBtn" class="btn-clear-filter" onclick="clearExpenseDetailedFilters()" style="display:none" title="Clear all filters">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-              <span>Clear Filter</span>
+              <span>✕ Clear</span>
             </button>
-            <button class="btn-add" style="margin:0" onclick="addExpense()">+ Add</button>
+            <button class="btn-add btn-add-header" onclick="addExpense()">+ Add</button>
           </div>
         </div>
 
@@ -9732,7 +9768,7 @@
         const baseCategories = ['Food', 'Housing', 'Utilities', 'Transportation', 'Entertainment', 'Health', 'Shopping', 'Investment', 'Other'];
         const uniqueCats = Array.from(new Set([...baseCategories, ...expenses.map(e => e.cat).filter(Boolean)])).sort();
 
-        let catOptions = '<option value="">All Categories</option>';
+        let catOptions = '<option value="">Category</option>';
         uniqueCats.forEach(c => {
           const sel = (window.selectedExpenseCategory && String(window.selectedExpenseCategory).toLowerCase() === String(c).toLowerCase()) ? 'selected' : '';
           catOptions += `<option value="${escapeXml(c)}" ${sel}>${escapeXml(c)}</option>`;
