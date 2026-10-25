@@ -1496,44 +1496,83 @@
       flex-wrap: nowrap;
     }
 
-    .btn-add-header {
-      width: 72px !important;
+    /* Target the enhanced pill dropdown trigger for category */
+    .def-header-actions .pill-dropdown {
+      width: 76px !important;
+      min-width: 76px !important;
+      max-width: 76px !important;
       height: 30px !important;
       min-height: 30px !important;
       max-height: 30px !important;
-      line-height: 30px !important;
-      box-sizing: border-box !important;
-      padding: 0 !important;
-      font-size: 11px !important;
-      font-weight: 700 !important;
-      border-radius: 8px !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
       margin: 0 !important;
       flex-shrink: 0 !important;
-      cursor: pointer;
-      vertical-align: middle;
+      vertical-align: middle !important;
+      display: inline-flex !important;
+      align-items: center !important;
     }
 
+    .def-header-actions .pill-dropdown-trigger {
+      width: 76px !important;
+      min-width: 76px !important;
+      max-width: 76px !important;
+      height: 30px !important;
+      min-height: 30px !important;
+      max-height: 30px !important;
+      line-height: 28px !important;
+      box-sizing: border-box !important;
+      padding: 0 18px 0 8px !important;
+      border-radius: 8px !important;
+      border: 1px solid var(--panel-brd) !important;
+      background: var(--input-bg) !important;
+      color: var(--txt) !important;
+      font-family: inherit !important;
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      text-align: left !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      cursor: pointer !important;
+      margin: 0 !important;
+      flex-shrink: 0 !important;
+      vertical-align: middle !important;
+    }
+
+    .def-header-actions .pill-dropdown-trigger::after {
+      right: 6px !important;
+      width: 10px !important;
+      height: 10px !important;
+      margin-top: 0 !important;
+    }
+
+    .def-header-actions .pill-dropdown-trigger:hover,
+    .def-header-actions .pill-dropdown.open .pill-dropdown-trigger {
+      border-color: var(--accent) !important;
+      background: rgba(255, 255, 255, 0.1) !important;
+      box-shadow: 0 0 8px rgba(195, 255, 77, 0.18) !important;
+    }
+
+    /* Fallback native select (if pill dropdown is not used) */
     .def-header-select {
       background: var(--input-bg);
       border: 1px solid var(--panel-brd);
       color: var(--txt);
-      font-size: 11px;
-      font-weight: 600;
+      font-family: inherit !important;
+      font-size: 11px !important;
+      font-weight: 700 !important;
       border-radius: 8px;
       padding: 0 16px 0 6px;
       height: 30px !important;
       min-height: 30px !important;
       max-height: 30px !important;
       line-height: 28px !important;
-      width: 72px;
+      width: 76px !important;
+      min-width: 76px !important;
+      max-width: 76px !important;
       box-sizing: border-box;
       outline: none;
       cursor: pointer;
       transition: border-color 0.2s, box-shadow 0.2s;
-      font-family: inherit;
       color-scheme: dark;
       margin: 0;
       text-align: center;
@@ -1564,68 +1603,111 @@
       text-align: left;
     }
 
+    /* Date picker wrapper & input styling (crystal clear text on phones) */
     .def-header-date-wrap {
-      display: inline-flex;
-      align-items: center;
-      gap: 2px;
-      background: var(--input-bg);
-      border: 1px solid var(--panel-brd);
-      border-radius: 8px;
-      padding: 0 5px;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 3px !important;
+      background: #22262e !important;
+      border: 1px solid rgba(255, 255, 255, 0.22) !important;
+      border-radius: 8px !important;
+      padding: 0 6px !important;
       height: 30px !important;
       min-height: 30px !important;
       max-height: 30px !important;
-      width: 92px;
-      box-sizing: border-box;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      margin: 0;
-      flex-shrink: 0;
-      vertical-align: middle;
+      width: 105px !important;
+      min-width: 105px !important;
+      box-sizing: border-box !important;
+      transition: border-color 0.2s, box-shadow 0.2s !important;
+      margin: 0 !important;
+      flex-shrink: 0 !important;
+      vertical-align: middle !important;
     }
 
     .def-header-date-wrap:hover,
     .def-header-date-wrap:focus-within {
-      border-color: var(--accent);
-      box-shadow: 0 0 8px rgba(195, 255, 77, 0.18);
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 8px rgba(195, 255, 77, 0.18) !important;
     }
 
     .def-header-date {
-      background: transparent;
-      border: none;
-      color: var(--txt);
-      font-size: 10px;
-      font-weight: 600;
-      outline: none;
-      cursor: pointer;
-      font-family: inherit;
-      color-scheme: dark;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      vertical-align: middle;
+      background: transparent !important;
+      border: none !important;
+      color: #f0f2f5 !important;
+      -webkit-text-fill-color: #f0f2f5 !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      font-family: inherit !important;
+      outline: none !important;
+      cursor: pointer !important;
+      color-scheme: dark !important;
+      padding: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      vertical-align: middle !important;
+      opacity: 1 !important;
+    }
+
+    /* Ensure date placeholder and field text is bright and readable on phone screens */
+    .def-header-date::-webkit-datetime-edit,
+    .def-header-date::-webkit-datetime-edit-fields-wrapper,
+    .def-header-date::-webkit-datetime-edit-text,
+    .def-header-date::-webkit-datetime-edit-month-field,
+    .def-header-date::-webkit-datetime-edit-day-field,
+    .def-header-date::-webkit-datetime-edit-year-field {
+      color: #f0f2f5 !important;
+      -webkit-text-fill-color: #f0f2f5 !important;
+      font-family: inherit !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
     }
 
     .def-header-date::-webkit-calendar-picker-indicator {
-      cursor: pointer;
-      padding: 0;
-      margin-left: 1px;
-      filter: invert(0.8);
+      cursor: pointer !important;
+      padding: 0 !important;
+      margin-left: 2px !important;
+      filter: invert(1) brightness(1.2) !important;
+      opacity: 0.9 !important;
     }
 
     .def-header-date-clear {
-      background: transparent;
-      border: none;
-      color: var(--txt-dim);
-      font-size: 14px;
-      line-height: 1;
-      cursor: pointer;
-      padding: 0 1px;
-      border-radius: 50%;
-      transition: color 0.15s;
+      background: transparent !important;
+      border: none !important;
+      color: var(--txt-dim) !important;
+      font-size: 14px !important;
+      line-height: 1 !important;
+      cursor: pointer !important;
+      padding: 0 1px !important;
+      border-radius: 50% !important;
+      transition: color 0.15s !important;
     }
 
     .def-header-date-clear:hover {
-      color: #ff6b6b;
+      color: #ff6b6b !important;
+    }
+
+    /* + Add button matching height and font of Category button */
+    .btn-add-header {
+      width: 76px !important;
+      min-width: 76px !important;
+      max-width: 76px !important;
+      height: 30px !important;
+      min-height: 30px !important;
+      max-height: 30px !important;
+      line-height: 30px !important;
+      box-sizing: border-box !important;
+      padding: 0 !important;
+      font-family: inherit !important;
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      border-radius: 8px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      margin: 0 !important;
+      flex-shrink: 0 !important;
+      cursor: pointer !important;
+      vertical-align: middle !important;
     }
 
     /* Mobile screens: wrap actions to another line */
